@@ -57,7 +57,16 @@ class _BotaoToggleState extends State<BotaoToggle> {
 }
 
 class BotaoElevated extends StatefulWidget {
-  const BotaoElevated({super.key});
+  final String texto;
+  final VoidCallback? onPressed;
+  final IconData? icone;
+
+  const BotaoElevated({
+    super.key,
+    required this.texto,
+    this.onPressed,
+    this.icone,
+  });
 
   @override
   State<BotaoElevated> createState() => _BotaoElevatedState();
@@ -68,20 +77,22 @@ class _BotaoElevatedState extends State<BotaoElevated> {
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: widget.onPressed ?? () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFF5167),
           foregroundColor: const Color(0xFF5B0015),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment:
               MainAxisAlignment.center, //centraliza o texto e o ícone
           children: [
-            Text("Acessar Sistema"),
-            SizedBox(width: 8),
-            Icon(Icons.arrow_forward),
+            Text(widget.texto),
+            if (widget.icone != null) ...[
+              const SizedBox(width: 8),
+              Icon(widget.icone),
+            ],
           ],
         ),
       ),
@@ -103,7 +114,6 @@ class _BotaoTextState extends State<BotaoText> {
       alignment: Alignment.centerRight,
       child: TextButton(
         onPressed: () {
-          // aqui você coloca a ação
           print("Esqueceu a senha clicado");
         },
         child: const Text(

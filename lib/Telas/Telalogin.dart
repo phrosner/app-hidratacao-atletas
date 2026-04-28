@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
+import 'package:hidratrack/Telas/Telacadastro.dart';
 
 class Telalogin extends StatefulWidget {
   const Telalogin({super.key});
@@ -28,10 +29,9 @@ class _TelaloginState extends State<Telalogin> {
                   children: [
                     const SizedBox(height: 40),
 
-                    // ===== TÍTULO =====
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: const Text(
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: Text(
                         'SÃO CAMILO',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -58,7 +58,6 @@ class _TelaloginState extends State<Telalogin> {
 
                     const SizedBox(height: 40),
 
-                    // ===== CARD =====
                     Container(
                       width: size.width > 600 ? 420 : double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -76,7 +75,6 @@ class _TelaloginState extends State<Telalogin> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ===== TOGGLE COM FUNDO RESTAURADO =====
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(4),
@@ -89,7 +87,6 @@ class _TelaloginState extends State<Telalogin> {
 
                           const SizedBox(height: 20),
 
-                          // ===== IDENTIFICADOR =====
                           Row(
                             children: const [
                               Icon(
@@ -135,7 +132,6 @@ class _TelaloginState extends State<Telalogin> {
 
                           const SizedBox(height: 18),
 
-                          // ===== SENHA HEADER =====
                           Row(
                             children: const [
                               Icon(
@@ -156,7 +152,6 @@ class _TelaloginState extends State<Telalogin> {
 
                           const SizedBox(height: 8),
 
-                          // ===== INPUT SENHA =====
                           TextFormField(
                             obscureText: !mostrarSenha,
                             style: const TextStyle(color: Colors.white),
@@ -195,7 +190,6 @@ class _TelaloginState extends State<Telalogin> {
                             ),
                           ),
 
-                          // ===== ESQUECEU SENHA =====
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -212,8 +206,19 @@ class _TelaloginState extends State<Telalogin> {
 
                           const SizedBox(height: 20),
 
-                          // ===== BOTÃO LOGIN =====
-                          const BotaoElevated(),
+                          BotaoElevated(
+                            texto: "Acessar Sistema",
+                            icone: Icons.arrow_forward,
+                            onPressed: () {
+                              Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const TelaCadastroAtleta(),
+  ),
+);
+                              print("Login clicado");
+                            },
+                          ),
                         ],
                       ),
                     ),
