@@ -1,7 +1,7 @@
 package br.com.hidratrack.HidraTrack.model;
 
 import jakarta.persistence.*;
-
+//teste
 @Entity
 @Table(name = "usuarios")
 public class Usuario {
