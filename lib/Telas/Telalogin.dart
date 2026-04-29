@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
-
+import 'package:hidratrack/Telas/Telacadastro.dart';
 
 class Telalogin extends StatefulWidget {
   const Telalogin({super.key});
@@ -10,166 +10,226 @@ class Telalogin extends StatefulWidget {
 }
 
 class _TelaloginState extends State<Telalogin> {
-  bool mostrarSenha = false;//variável para controlar a exibição da senha
+  bool mostrarSenha = false;
+
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1F0F10),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-      'SÃO CAMILO',
-      style: TextStyle(
-        color: Color(0xFFFCDBDB),
-        fontSize: 64,
-        fontFamily: 'Bebas Neue' 
-      ),
-    ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 40),
 
-    const SizedBox(height: 0),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: Text(
+                        'SÃO CAMILO',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFFFD6DA),
+                          fontSize: 54,
+                          fontFamily: 'Bebas Neue',
+                          letterSpacing: 2,
+                          height: 1,
+                        ),
+                      ),
+                    ),
 
-    const Text(
-      'SPORT',
-      style: TextStyle(
-        color: Color(0xFFFF5167),
-        fontSize: 64,
-        height: 0.4,
-        fontFamily: 'Bebas Neue'
-        
-      ),
-    ),
-    const SizedBox(height: 60),
-  
+                    const Text(
+                      'SPORT',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFFF4D6D),
+                        fontSize: 54,
+                        fontFamily: 'Bebas Neue',
+                        letterSpacing: 2,
+                        height: 0.9,
+                      ),
+                    ),
 
-          Container(
-            padding: const EdgeInsets.all(40),
-            height: 400,
-            width: double.infinity,
-            margin: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0xFF2E1C1C),
-            ),
+                    const SizedBox(height: 40),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [ Container(
-                padding: const EdgeInsets.all(0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF442F30),
-                  borderRadius: BorderRadius.circular(12),
+                    Container(
+                      width: size.width > 600 ? 420 : double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2B1718),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 25,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF442F30),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const BotaoToggle(),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          Row(
+                            children: const [
+                              Icon(
+                                Icons.person_outline,
+                                color: Color(0xFFE6BCBD),
+                                size: 14,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Identificador',
+                                style: TextStyle(
+                                  color: Color(0xFFE6BCBD),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          TextFormField(
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFF3A2223),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              labelText: 'Email ou ID',
+                              floatingLabelBehavior:
+                                  FloatingLabelBehavior.never,
+                              labelStyle: const TextStyle(
+                                color: Color(0xAAE6BCBD),
+                                fontSize: 11,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 18),
+
+                          Row(
+                            children: const [
+                              Icon(
+                                Icons.lock_outline,
+                                color: Color(0xFFE6BCBD),
+                                size: 14,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Senha',
+                                style: TextStyle(
+                                  color: Color(0xFFE6BCBD),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          TextFormField(
+                            obscureText: !mostrarSenha,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFF3A2223),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              labelText: 'Senha',
+                              floatingLabelBehavior:
+                                  FloatingLabelBehavior.never,
+                              labelStyle: const TextStyle(
+                                color: Color(0xAAE6BCBD),
+                                fontSize: 11,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 16,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  mostrarSenha
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: const Color(0xAAE6BCBD),
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    mostrarSenha = !mostrarSenha;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {},
+                              child: const Text(
+                                'Esqueceu a senha?',
+                                style: TextStyle(
+                                  color: Color(0xFF82CFFF),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          BotaoElevated(
+                            texto: "Acessar Sistema",
+                            icone: Icons.arrow_forward,
+                            onPressed: () {
+                              Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const TelaCadastroAtleta(),
+  ),
+);
+                              print("Login clicado");
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
                 ),
-                child: BotaoToggle(),
               ),
-                Row(
-                  children:[
-                    Icon( 
-                      Icons.person_outline,
-                      color: Color(0xFFE6BCBD),
-                      size: 12,
-                    ),
-                Text(
-                  'Identificador',
-                  style: TextStyle(
-                    color: Color(0xFFE6BCBD),
-                    fontSize: 10,
-                  ),
-                ),
-                ],
-                ),
-
-                const SizedBox(height: 8),
-
-                TextFormField(
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(12),
-                      ),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Color(0xFF442F30),
-                    labelText: 'Email ou ID',
-                    labelStyle: TextStyle(
-                      color: Color(0xAAE6BCBD),
-                      fontSize: 10,
-                    ),
-                    floatingLabelBehavior:
-                        FloatingLabelBehavior.never,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-                Row(
-                  children:[
-                    Icon( 
-                      Icons.lock_outline,
-                      color: Color(0xFFE6BCBD),
-                      size: 12,
-                    ),  
-                Text(
-                  'Senha',
-                  style: TextStyle(
-                    color: Color(0xFFE6BCBD),
-                    fontSize: 10,
-                  ),
-                ),
-                Spacer(),
-                BotaoText(),
-                ],
-                ),
-
-                TextFormField(
-                  style: const TextStyle(color: Colors.white),
-                  obscureText:!mostrarSenha,//controla mostrar senha
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(12),
-                      ),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Color(0xFF442F30),
-                    labelText: 'Senha',
-                    labelStyle: TextStyle(
-                      color: Color(0xAAE6BCBD),
-                      fontSize: 10,
-                    ),
-                    floatingLabelBehavior:
-                        FloatingLabelBehavior.never,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        mostrarSenha
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        color: Color(0xAAE6BCBD),
-                        size: 12,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          mostrarSenha = !mostrarSenha;//alterna a exibição da senha
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                BotaoElevated()
-              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
