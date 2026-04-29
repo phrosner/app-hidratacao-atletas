@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/Telas/Telacadastro.dart';
+import 'package:hidratrack/Telas/Telacadastrotreinador.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true
       ),
-      home:const TelaCadastroAtleta(),
+      home:const TelaCadastroTreinador(),
 
     );
   }
