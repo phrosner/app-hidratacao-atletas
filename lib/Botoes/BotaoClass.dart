@@ -57,7 +57,10 @@ class _BotaoToggleState extends State<BotaoToggle> {
 }
 
 class BotaoElevated extends StatefulWidget {
-  const BotaoElevated({super.key});
+  final VoidCallback? onPressed;
+  final bool carregando;
+
+  const BotaoElevated({super.key, this.onPressed, this.carregando = false});
 
   @override
   State<BotaoElevated> createState() => _BotaoElevatedState();
@@ -68,20 +71,28 @@ class _BotaoElevatedState extends State<BotaoElevated> {
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: widget.onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFF5167),
           foregroundColor: const Color(0xFF5B0015),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment:
               MainAxisAlignment.center, //centraliza o texto e o ícone
           children: [
-            Text("Acessar Sistema"),
-            SizedBox(width: 8),
-            Icon(Icons.arrow_forward),
+            if (widget.carregando) ...[
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+            ],
+            const Text("Acessar Sistema"),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward),
           ],
         ),
       ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
 
 class Telalogin extends StatefulWidget {
@@ -10,6 +13,79 @@ class Telalogin extends StatefulWidget {
 
 class _TelaloginState extends State<Telalogin> {
   bool mostrarSenha = false;
+  bool carregandoLogin = false;
+  final TextEditingController usuarioController = TextEditingController();
+  final TextEditingController senhaController = TextEditingController();
+
+  @override
+  void dispose() {
+    usuarioController.dispose();
+    senhaController.dispose();
+    super.dispose();
+  }
+
+  String getApiBaseUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:8080';
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:8080';
+    }
+    return 'http://localhost:8080';
+  }
+
+  Future<void> fazerLogin() async {
+    final usuario = usuarioController.text.trim();
+    final senha = senhaController.text.trim();
+
+    if (usuario.isEmpty || senha.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha usuário e senha')),
+      );
+      return;
+    }
+
+    setState(() {
+      carregandoLogin = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('${getApiBaseUrl()}/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'usuario': usuario, 'senha': senha}),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login bem sucedido')),
+        );
+      } else if (response.statusCode == 401) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login inválido')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro no login: ${response.statusCode}')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível conectar ao backend em localhost:8080'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          carregandoLogin = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +187,7 @@ class _TelaloginState extends State<Telalogin> {
                           const SizedBox(height: 8),
 
                           TextFormField(
+                            controller: usuarioController,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               filled: true,
@@ -158,6 +235,7 @@ class _TelaloginState extends State<Telalogin> {
 
                           // ===== INPUT SENHA =====
                           TextFormField(
+                            controller: senhaController,
                             obscureText: !mostrarSenha,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
@@ -213,7 +291,10 @@ class _TelaloginState extends State<Telalogin> {
                           const SizedBox(height: 20),
 
                           // ===== BOTÃO LOGIN =====
-                          const BotaoElevated(),
+                          BotaoElevated(
+                            onPressed: carregandoLogin ? null : fazerLogin,
+                            carregando: carregandoLogin,
+                          ),
                         ],
                       ),
                     ),
