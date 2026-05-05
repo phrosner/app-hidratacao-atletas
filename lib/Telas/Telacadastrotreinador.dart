@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Botoes/BotaoClass.dart'; 
+import 'package:hidratrack/Botoes/BotaoClass.dart';
+import 'package:hidratrack/Componentes/ResponsiveContent.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
 
 class TelaCadastroTreinador extends StatefulWidget {
@@ -10,7 +11,6 @@ class TelaCadastroTreinador extends StatefulWidget {
 }
 
 class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
-  
   bool _obscureSenha = true;
   bool _obscureConfirmacao = true;
 
@@ -29,10 +29,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
               MaterialPageRoute(builder: (context) => const Telalogin()),
             );
           },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.pinkAccent,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.pinkAccent),
         ),
         title: const Text(
           "CADASTRO DE TREINADOR",
@@ -44,64 +41,61 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
         ),
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
+        child: ResponsiveContent(
+          maxWidth: 900,
+          mobilePadding: const EdgeInsets.all(18),
           child: Column(
             children: [
-              
-              _buildSection(
-                "INFORMAÇÕES PESSOAIS",
-                [
-                  _buildInput("NOME COMPLETO", "Seu nome completo"),
-                  _buildInput("E-MAIL", "treinador@exemplo.com"),
-                  _buildInput("NASCIMENTO", "mm/dd/yyyy"),
-                ],
-              ),
+              _buildSection("INFORMAÇÕES PESSOAIS", [
+                _buildInput("NOME COMPLETO", "Seu nome completo"),
+                _buildInput("E-MAIL", "treinador@exemplo.com"),
+                _buildInput("NASCIMENTO", "mm/dd/yyyy"),
+              ]),
 
               const SizedBox(height: 20),
 
-              
-              _buildSection(
-                "ACESSO",
-                [
-                  _buildInput(
-                    "SENHA",
-                    "........",
-                    isObscure: _obscureSenha,
-                    suffix: IconButton(
-                      icon: Icon(
-                        _obscureSenha ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        color: Colors.white38,
-                      ),
-                      onPressed: () => setState(() => _obscureSenha = !_obscureSenha),
+              _buildSection("ACESSO", [
+                _buildInput(
+                  "SENHA",
+                  "........",
+                  isObscure: _obscureSenha,
+                  suffix: IconButton(
+                    icon: Icon(
+                      _obscureSenha
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.white38,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscureSenha = !_obscureSenha),
+                  ),
+                ),
+                _buildInput(
+                  "CONFIRMAÇÃO DE SENHA",
+                  "........",
+                  isObscure: _obscureConfirmacao,
+                  suffix: IconButton(
+                    icon: Icon(
+                      _obscureConfirmacao
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.white38,
+                    ),
+                    onPressed: () => setState(
+                      () => _obscureConfirmacao = !_obscureConfirmacao,
                     ),
                   ),
-                  _buildInput(
-                    "CONFIRMAÇÃO DE SENHA",
-                    "........",
-                    isObscure: _obscureConfirmacao,
-                    suffix: IconButton(
-                      icon: Icon(
-                        _obscureConfirmacao ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        color: Colors.white38,
-                      ),
-                      onPressed: () => setState(() => _obscureConfirmacao = !_obscureConfirmacao),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ]),
 
               const SizedBox(height: 30),
 
-              
               BotaoElevated(
                 texto: "SALVAR CADASTRO",
                 icone: Icons.check_circle_outline,
-                onPressed: () {
-                  print("Cadastro salvo com sucesso!");
-                },
+                onPressed: () {},
               ),
-              
+
               const SizedBox(height: 20),
             ],
           ),
@@ -109,8 +103,6 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
       ),
     );
   }
-
-  
 
   Widget _buildSection(String titulo, List<Widget> children) {
     return Container(
@@ -127,7 +119,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
             titulo,
             style: const TextStyle(
               color: Color(0xFFE89CA6),
-              fontSize: 24, 
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -139,7 +131,12 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
     );
   }
 
-  Widget _buildInput(String label, String hint, {bool isObscure = false, Widget? suffix}) {
+  Widget _buildInput(
+    String label,
+    String hint, {
+    bool isObscure = false,
+    Widget? suffix,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -162,7 +159,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
               hintText: hint,
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
-              fillColor: const Color(0xFF5A3A3F), 
+              fillColor: const Color(0xFF5A3A3F),
               suffixIcon: suffix,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Telas/Telaatletas.dart';
 import 'package:hidratrack/Telas/Teladashboard.dart';
 import 'package:hidratrack/Telas/Telaequipes.dart';
-import 'package:hidratrack/Telas/Telalogin.dart';
-import 'package:hidratrack/Telas/Telacadastro.dart';
-import 'package:hidratrack/Telas/Telacadastrotreinador.dart';
+import 'package:hidratrack/Telas/TelacriarEquipe.dart';
+import 'package:hidratrack/Telas/TeladadosEquipe.dart';
+import 'package:hidratrack/Telas/TeladadosAtletas.dart';
+import 'package:hidratrack/Telas/Telagraficos.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,10 +22,18 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true
+        useMaterial3: true,
       ),
-      home:const TelaEquipes(),
-
+      home: const TelaDAshboard(),
+      routes: {
+        '/dashboard': (context) => const TelaDAshboard(),
+        '/equipes': (context) => const TelaEquipes(),
+        '/atletas': (context) => const TelaAtletas(),
+        '/criar-equipe': (context) => const TelacriarEquipe(),
+        '/dados-equipe': (context) => const TeladadosEquipe(),
+        '/dados-atleta': (context) => const TeladadosAtletas(),
+        '/graficos': (context) => const Telagraficos(),
+      },
     );
   }
 }

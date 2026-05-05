@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
+import 'package:hidratrack/Componentes/ResponsiveContent.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
 
 class TelaCadastroAtleta extends StatefulWidget {
@@ -22,16 +23,11 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
         leading: IconButton(
           onPressed: () {
             Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (context) => const Telalogin(),
-  ),
-);
+              context,
+              MaterialPageRoute(builder: (context) => const Telalogin()),
+            );
           },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.pinkAccent,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.pinkAccent),
         ),
         title: const Text(
           "CADASTRO DE ATLETA",
@@ -44,58 +40,35 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
       ),
 
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
+        child: ResponsiveContent(
+          maxWidth: 900,
+          mobilePadding: const EdgeInsets.all(18),
           child: Column(
             children: [
-              _buildSection(
-                "INFORMAÇÕES BÁSICAS",
-                [
-                  _buildInput("NOME COMPLETO", "Ex: João Silva"),
-                  _buildInput(
-                    "CÓDIGO DE IDENTIFICAÇÃO",
-                    "ID Atleta (Opcional)",
-                  ),
-                  _buildInput(
-                    "DATA DE NASCIMENTO",
-                    "mm/dd/yyyy",
-                  ),
-                ],
-              ),
+              _buildSection("INFORMAÇÕES BÁSICAS", [
+                _buildInput("NOME COMPLETO", "Ex: João Silva"),
+                _buildInput("CÓDIGO DE IDENTIFICAÇÃO", "ID Atleta (Opcional)"),
+                _buildInput("DATA DE NASCIMENTO", "mm/dd/yyyy"),
+              ]),
 
               const SizedBox(height: 20),
 
-              _buildSection(
-                "DADOS INICIAIS",
-                [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInput(
-                          "PESO BASE",
-                          "00.0 KG",
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInput(
-                          "ALTURA",
-                          "000 CM",
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              _buildSection("DADOS INICIAIS", [
+                Row(
+                  children: [
+                    Expanded(child: _buildInput("PESO BASE", "00.0 KG")),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildInput("ALTURA", "000 CM")),
+                  ],
+                ),
+              ]),
 
               const SizedBox(height: 30),
 
               BotaoElevated(
                 texto: "SALVAR CADASTRO",
                 icone: Icons.check_circle_outline,
-                onPressed: () {
-                  print("Cadastro salvo");
-                },
+                onPressed: () {},
               ),
             ],
           ),
@@ -123,9 +96,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const Divider(
-            color: Colors.white12,
-          ),
+          const Divider(color: Colors.white12),
           const SizedBox(height: 10),
           ...children,
         ],
@@ -152,9 +123,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                color: Colors.white38,
-              ),
+              hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: const Color(0xFF5A3A3F),
               border: OutlineInputBorder(
