@@ -15,6 +15,7 @@ class _TelaloginState extends State<Telalogin> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isDesktop = size.width >= 900;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1F0F10),
@@ -22,21 +23,24 @@ class _TelaloginState extends State<Telalogin> {
         child: SingleChildScrollView(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
+              constraints: const BoxConstraints(maxWidth: 1040),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 32 : 20,
+                  vertical: isDesktop ? 28 : 0,
+                ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
+                    SizedBox(height: isDesktop ? 56 : 40),
 
-                    const Padding(
-                      padding: EdgeInsets.only(top: 20),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
                       child: Text(
                         'SÃO CAMILO',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Color(0xFFFFD6DA),
-                          fontSize: 54,
+                          color: const Color(0xFFFFD6DA),
+                          fontSize: isDesktop ? 72 : 54,
                           fontFamily: 'Bebas Neue',
                           letterSpacing: 2,
                           height: 1,
@@ -44,29 +48,29 @@ class _TelaloginState extends State<Telalogin> {
                       ),
                     ),
 
-                    const Text(
+                    Text(
                       'SPORT',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFFFF4D6D),
-                        fontSize: 54,
+                        color: const Color(0xFFFF4D6D),
+                        fontSize: isDesktop ? 72 : 54,
                         fontFamily: 'Bebas Neue',
                         letterSpacing: 2,
                         height: 0.9,
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    SizedBox(height: isDesktop ? 52 : 40),
 
                     Container(
-                      width: size.width > 600 ? 420 : double.infinity,
-                      padding: const EdgeInsets.all(24),
+                      width: size.width > 600 ? 460 : double.infinity,
+                      padding: EdgeInsets.all(isDesktop ? 28 : 24),
                       decoration: BoxDecoration(
                         color: const Color(0xFF2B1718),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 25,
                             offset: const Offset(0, 12),
                           ),
@@ -211,12 +215,12 @@ class _TelaloginState extends State<Telalogin> {
                             icone: Icons.arrow_forward,
                             onPressed: () {
                               Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (context) => const TelaCadastroAtleta(),
-  ),
-);
-                              print("Login clicado");
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TelaCadastroAtleta(),
+                                ),
+                              );
                             },
                           ),
                         ],

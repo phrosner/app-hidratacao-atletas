@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
 import 'package:hidratrack/Componentes/BottomNavBarClass.dart';
+import 'package:hidratrack/Componentes/ResponsiveContent.dart';
+import 'package:hidratrack/Telas/TelacriarEquipe.dart';
+import 'package:hidratrack/Telas/TeladadosEquipe.dart';
 
 class TelaEquipes extends StatefulWidget {
   const TelaEquipes({super.key});
@@ -57,17 +60,37 @@ class _TelaEquipesState extends State<TelaEquipes> {
         _equipeFiltrada = _equipes;
       } else {
         _equipeFiltrada = _equipes
-            .where((equipe) =>
-                equipe.nome.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (equipe) =>
+                  equipe.nome.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
+  }
+
+  void _navegarTela(int index) {
+    switch (index) {
+      case 0:
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+        break;
+      case 1:
+        Navigator.of(context).pushReplacementNamed('/equipes');
+        break;
+      case 2:
+        Navigator.of(context).pushReplacementNamed('/atletas');
+        break;
+      case 3:
+        Navigator.of(context).pushReplacementNamed('/graficos');
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
+    final isDesktop = size.width >= 900;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A0003),
@@ -83,24 +106,19 @@ class _TelaEquipesState extends State<TelaEquipes> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-        ],
+        actions: [],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 16 : 24,
-              vertical: isMobile ? 16 : 24,
-            ),
+          child: ResponsiveContent(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "MINHAS EQUIPES",
                   style: TextStyle(
-                    color: Color(0xFFFFD6DA),
-                    fontSize: 28,
+                    color: const Color(0xFFFFD6DA),
+                    fontSize: isDesktop ? 34 : 28,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Bebas Neue',
                     letterSpacing: 2,
@@ -115,22 +133,36 @@ class _TelaEquipesState extends State<TelaEquipes> {
                     alignment: Alignment.center,
                     child: const Text(
                       "Nenhuma equipe encontrada",
-                      style: TextStyle(
-                        color: Color(0xFF8B6B6C),
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Color(0xFF8B6B6C), fontSize: 14),
                     ),
                   )
                 else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _equipeFiltrada.length,
-                    itemBuilder: (context, index) {
-                      final equipe = _equipeFiltrada[index];
-                      return _buildEquipeCard(equipe, isMobile);
-                    },
-                  ),
+                  isDesktop
+                      ? GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 18,
+                                mainAxisSpacing: 18,
+                                childAspectRatio: 4.4,
+                              ),
+                          itemCount: _equipeFiltrada.length,
+                          itemBuilder: (context, index) {
+                            final equipe = _equipeFiltrada[index];
+                            return _buildEquipeCard(equipe, isMobile);
+                          },
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _equipeFiltrada.length,
+                          itemBuilder: (context, index) {
+                            final equipe = _equipeFiltrada[index];
+                            return _buildEquipeCard(equipe, isMobile);
+                          },
+                        ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -138,13 +170,13 @@ class _TelaEquipesState extends State<TelaEquipes> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const TelacriarEquipe()),
+          );
+        },
         backgroundColor: const Color(0xFFFF4D6D),
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentNavIndex,
@@ -152,6 +184,7 @@ class _TelaEquipesState extends State<TelaEquipes> {
           setState(() {
             _currentNavIndex = index;
           });
+          _navegarTela(index);
         },
       ),
     );
@@ -169,16 +202,13 @@ class _TelaEquipesState extends State<TelaEquipes> {
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: "Buscar equipes...",
-          hintStyle: const TextStyle(
-            color: Color(0xFF8B6B6C),
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: Color(0xFF8B6B6C),
-          ),
+          hintStyle: const TextStyle(color: Color(0xFF8B6B6C)),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF8B6B6C)),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
       ),
     );
@@ -187,86 +217,96 @@ class _TelaEquipesState extends State<TelaEquipes> {
   Widget _buildEquipeCard(Equipe equipe, bool isMobile) {
     final isEmTreino = equipe.status == "EM TREINO";
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D1B1B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isEmTreino
-                            ? const Color(0xFFFF4D6D)
-                            : const Color(0xFF5A3A3F),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        equipe.status,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => TeladadosEquipe(equipe: equipe),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D1B1B),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isEmTreino
+                              ? const Color(0xFFFF4D6D)
+                              : const Color(0xFF5A3A3F),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          equipe.status,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        equipe.nome,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          equipe.nome,
+                          style: const TextStyle(
+                            color: Color(0xFFFFD6DA),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Bebas Neue',
+                            letterSpacing: 1,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.people,
+                        color: Color(0xFF6B9BD1),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "${equipe.numeroAtletas} ATLETAS",
                         style: const TextStyle(
                           color: Color(0xFFFFD6DA),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Bebas Neue',
-                          letterSpacing: 1,
+                          fontSize: 12,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.people,
-                      color: Color(0xFF6B9BD1),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      "${equipe.numeroAtletas} ATLETAS",
-                      style: const TextStyle(
-                        color: Color(0xFFFFD6DA),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          const Icon(
-            Icons.arrow_forward_ios,
-            color: Color(0xFF8B6B6C),
-            size: 18,
-          ),
-        ],
+            const SizedBox(width: 12),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Color(0xFF8B6B6C),
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }

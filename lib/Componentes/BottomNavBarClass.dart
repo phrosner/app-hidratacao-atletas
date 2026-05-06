@@ -17,7 +17,7 @@ class BottomNavBar extends StatelessWidget {
         color: const Color(0xFF1A0003),
         border: Border(
           top: BorderSide(
-            color: const Color(0xFFFFD6DA).withOpacity(0.2),
+            color: const Color(0xFFFFD6DA).withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -31,21 +31,12 @@ class BottomNavBar extends StatelessWidget {
         unselectedItemColor: const Color(0xFF8B6B6C),
         elevation: 0,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Atletas',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Equipes'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Atleta'),
           BottomNavigationBarItem(
             icon: Icon(Icons.assessment),
-            label: 'Relatórios',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
+            label: 'Relatorios',
           ),
         ],
       ),

@@ -4,6 +4,10 @@ class Equipe {
   final String status;
   final int numeroAtletas;
   final double percentualHidratacao;
+  final String? categoria;
+  final String? modalidade;
+  final String? descricao;
+  final List<int>? atletasIds;
 
   Equipe({
     required this.id,
@@ -11,6 +15,10 @@ class Equipe {
     required this.status,
     required this.numeroAtletas,
     required this.percentualHidratacao,
+    this.categoria,
+    this.modalidade,
+    this.descricao,
+    this.atletasIds,
   });
 
   factory Equipe.fromJson(Map<String, dynamic> json) {
@@ -20,6 +28,10 @@ class Equipe {
       status: json['status'] ?? 'DESCANSO',
       numeroAtletas: json['numeroAtletas'] ?? 0,
       percentualHidratacao: (json['percentualHidratacao'] ?? 0.0).toDouble(),
+      categoria: json['categoria'],
+      modalidade: json['modalidade'],
+      descricao: json['descricao'],
+      atletasIds: List<int>.from(json['atletasIds'] ?? []),
     );
   }
 
@@ -30,6 +42,10 @@ class Equipe {
       'status': status,
       'numeroAtletas': numeroAtletas,
       'percentualHidratacao': percentualHidratacao,
+      'categoria': categoria,
+      'modalidade': modalidade,
+      'descricao': descricao,
+      'atletasIds': atletasIds,
     };
   }
 }
