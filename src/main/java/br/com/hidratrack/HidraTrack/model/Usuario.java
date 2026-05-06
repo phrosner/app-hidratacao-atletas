@@ -14,8 +14,7 @@ public class Usuario {
     private String email;
     private String senha;
 
-    @Enumerated(EnumType.STRING)
-    private TipoUsuario tipo;
+    //private TipoUsuario tipo;
 
     private Boolean ativo;
 
@@ -51,13 +50,13 @@ public class Usuario {
         this.senha = senha;
     }
 
-    public TipoUsuario getTipo() {
-        return tipo;
-    }
+    //public TipoUsuario getTipo() {
+        //return tipo;
+    //}
 
-    public void setTipo(TipoUsuario tipo) {
-        this.tipo = tipo;
-    }
+    //public void setTipo(TipoUsuario tipo) {
+        //this.tipo = tipo;
+    //}
 
     public Boolean getAtivo() {
         return ativo;
