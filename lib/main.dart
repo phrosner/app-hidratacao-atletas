@@ -6,6 +6,7 @@ import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosAtletas.dart';
 import 'package:hidratrack/Telas/Telagraficos.dart';
+import 'package:hidratrack/Telas/TeladashboardAtleta.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,7 +25,17 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const TelaDAshboard(),
+      home: TelaDashboardAtleta(
+        data: AtletaDashboardData.fromHydrationMetrics(
+          athleteName: 'Ricardo',
+          sweatRate: 1.2,
+          recommendedIntakeLiters: 2.4,
+          recommendedWindow: const Duration(hours: 3),
+          completedPercent: 0.45,
+          averageRate: 0.8,
+          variationPercent: 12.5,
+        ),
+      ),
       routes: {
         '/dashboard': (context) => const TelaDAshboard(),
         '/equipes': (context) => const TelaEquipes(),
@@ -33,6 +44,17 @@ class MyApp extends StatelessWidget {
         '/dados-equipe': (context) => const TeladadosEquipe(),
         '/dados-atleta': (context) => const TeladadosAtletas(),
         '/graficos': (context) => const Telagraficos(),
+        '/dashboard-atleta': (context) => TelaDashboardAtleta(
+              data: AtletaDashboardData.fromHydrationMetrics(
+                athleteName: 'Ricardo',
+                sweatRate: 1.2,
+                recommendedIntakeLiters: 2.4,
+                recommendedWindow: const Duration(hours: 3),
+                completedPercent: 0.45,
+                averageRate: 0.8,
+                variationPercent: 12.5,
+              ),
+            ),
       },
     );
   }

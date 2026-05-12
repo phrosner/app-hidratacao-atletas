@@ -68,7 +68,9 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
               BotaoElevated(
                 texto: "SALVAR CADASTRO",
                 icone: Icons.check_circle_outline,
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+                },
               ),
             ],
           ),
