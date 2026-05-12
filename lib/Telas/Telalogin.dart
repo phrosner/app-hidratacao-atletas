@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
-import 'package:hidratrack/Telas/Telacadastro.dart';
 
 class Telalogin extends StatefulWidget {
   const Telalogin({super.key});
@@ -214,12 +213,9 @@ class _TelaloginState extends State<Telalogin> {
                             texto: "Acessar Sistema",
                             icone: Icons.arrow_forward,
                             onPressed: () {
-                              Navigator.pushReplacement(
+                              Navigator.pushReplacementNamed(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TelaCadastroAtleta(),
-                                ),
+                                '/dashboard-atleta',
                               );
                             },
                           ),

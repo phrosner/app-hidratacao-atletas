@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hidratrack/Componentes/BottomNavBarClass.dart';
 import 'package:hidratrack/Componentes/ResponsiveContent.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 import 'package:hidratrack/Telas/Telacadastro.dart';
-import 'package:hidratrack/Telas/TeladadosAtletas.dart';
+import 'package:hidratrack/Telas/TelavizualizarAtletas.dart';
+import 'package:share_plus/share_plus.dart';
 
 class TelaAtletas extends StatefulWidget {
   const TelaAtletas({super.key});
@@ -94,6 +96,104 @@ class _TelaAtletasState extends State<TelaAtletas> {
     }
   }
 
+  void _mostrarPopupCadastro() {
+    const linkUrl = 'https://hidratrack.app/cadastro-atleta';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Compartilhar link de cadastro',
+              style: TextStyle(
+                color: Color(0xFFFFD6DA),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SelectableText(
+              linkUrl,
+              style: const TextStyle(
+                color: Color(0xFF1E88E5),
+                decoration: TextDecoration.underline,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2D1B1B),
+                    ),
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      await Clipboard.setData(const ClipboardData(text: linkUrl));
+                      if (!mounted) return;
+                      Navigator.of(dialogContext).pop();
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Link copiado para a área de transferência'),
+                        ),
+                      );
+                    },
+                    child: const Text('COPIAR'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF5A3A3F),
+                      minimumSize: const Size(120, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    onPressed: () {
+                      Share.share(linkUrl);
+                    },
+                    child: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'COMPARTILHAR',
+                        softWrap: false,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const TelaCadastroAtleta(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'ABRIR LINK',
+                  style: TextStyle(color: Color(0xFFFF4D6D)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -173,11 +273,7 @@ class _TelaAtletasState extends State<TelaAtletas> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const TelaCadastroAtleta()),
-          );
-        },
+        onPressed: _mostrarPopupCadastro,
         backgroundColor: const Color(0xFFFF4D6D),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
@@ -225,7 +321,7 @@ class _TelaAtletasState extends State<TelaAtletas> {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => TeladadosAtletas(atleta: atleta),
+            builder: (context) => TelaVisualizarAtletas(atleta: atleta),
           ),
         );
       },
