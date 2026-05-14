@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Telas/Telaatletas.dart';
 import 'package:hidratrack/Telas/Teladashboard.dart';
 import 'package:hidratrack/Telas/Telaequipes.dart';
@@ -27,14 +28,14 @@ class MyApp extends StatelessWidget {
       ),
       home: const Telalogin(),
       routes: {
-        '/dashboard': (context) => const TelaDAshboard(),
+        AppRotas.dashboardTreinador: (context) => const TelaDAshboard(),
         '/equipes': (context) => const TelaEquipes(),
         '/atletas': (context) => const TelaAtletas(),
         '/criar-equipe': (context) => const TelacriarEquipe(),
         '/dados-equipe': (context) => const TeladadosEquipe(),
         '/dados-atleta': (context) => const TeladadosAtletas(),
         '/graficos': (context) => const Telagraficos(),
-        '/dashboard-atleta': (context) => TelaDashboardAtleta(
+        AppRotas.dashboardAtleta: (context) => TelaDashboardAtleta(
               data: AtletaDashboardData.fromHydrationMetrics(
                 athleteName: 'Ricardo',
                 sweatRate: 1.2,

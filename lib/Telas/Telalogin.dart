@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
 
 class Telalogin extends StatefulWidget {
@@ -49,17 +50,14 @@ class _TelaloginState extends State<Telalogin> {
     return 'Erro inesperado';
   }
 
-  void _navegarAposLogin(String tipoUsuario) {
-    switch (tipoUsuario) {
-      case 'TREINADOR':
-      case 'NUTRICIONISTA':
-        Navigator.pushReplacementNamed(context, '/dashboard');
-        break;
-      case 'ATLETA':
-      default:
-        Navigator.pushReplacementNamed(context, '/dashboard-atleta');
-        break;
+  /// Treinador e nutricionista: mesma área do app; início = dashboard do treinador.
+  void _navegarAposLogin(String tipoUsuarioRaw) {
+    final tipo = tipoUsuarioRaw.trim().toUpperCase();
+    if (tipo == 'TREINADOR' || tipo == 'NUTRICIONISTA') {
+      Navigator.pushReplacementNamed(context, AppRotas.dashboardTreinador);
+      return;
     }
+    Navigator.pushReplacementNamed(context, AppRotas.dashboardAtleta);
   }
 
   String getApiBaseUrl() {
@@ -103,7 +101,7 @@ class _TelaloginState extends State<Telalogin> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final tipo = data is Map && data['tipoUsuario'] != null
-            ? data['tipoUsuario'].toString()
+            ? data['tipoUsuario'].toString().trim().toUpperCase()
             : _tipoLoginApi(_perfilSelecionado);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login bem sucedido')),
