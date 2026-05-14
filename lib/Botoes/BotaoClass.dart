@@ -60,12 +60,14 @@ class BotaoElevated extends StatefulWidget {
   final String texto;
   final VoidCallback? onPressed;
   final IconData? icone;
+  final bool carregando;
 
   const BotaoElevated({
     super.key,
     required this.texto,
     this.onPressed,
     this.icone,
+    this.carregando = false,
   });
 
   @override
@@ -77,7 +79,7 @@ class _BotaoElevatedState extends State<BotaoElevated> {
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton(
-        onPressed: widget.onPressed ?? () {},
+        onPressed: widget.carregando ? null : widget.onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFF5167),
           foregroundColor: const Color(0xFF5B0015),
@@ -85,11 +87,18 @@ class _BotaoElevatedState extends State<BotaoElevated> {
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center, //centraliza o texto e o ícone
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (widget.carregando) ...[
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+            ],
             Text(widget.texto),
-            if (widget.icone != null) ...[
+            if (!widget.carregando && widget.icone != null) ...[
               const SizedBox(width: 8),
               Icon(widget.icone),
             ],

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:hidratrack/Botoes/BotaoClass.dart';
 
 class Telalogin extends StatefulWidget {
@@ -10,6 +13,80 @@ class Telalogin extends StatefulWidget {
 
 class _TelaloginState extends State<Telalogin> {
   bool mostrarSenha = false;
+  bool carregandoLogin = false;
+  final TextEditingController usuarioController = TextEditingController();
+  final TextEditingController senhaController = TextEditingController();
+
+  @override
+  void dispose() {
+    usuarioController.dispose();
+    senhaController.dispose();
+    super.dispose();
+  }
+
+  String getApiBaseUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:8080';
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:8080';
+    }
+    return 'http://localhost:8080';
+  }
+
+  Future<void> fazerLogin() async {
+    final usuario = usuarioController.text.trim();
+    final senha = senhaController.text.trim();
+
+    if (usuario.isEmpty || senha.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha usuário e senha')),
+      );
+      return;
+    }
+
+    setState(() {
+      carregandoLogin = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('${getApiBaseUrl()}/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'usuario': usuario, 'senha': senha}),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login bem sucedido')),
+        );
+        Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+      } else if (response.statusCode == 401) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login inválido')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro no login: ${response.statusCode}')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível conectar ao backend em localhost:8080'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          carregandoLogin = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +108,6 @@ class _TelaloginState extends State<Telalogin> {
                 child: Column(
                   children: [
                     SizedBox(height: isDesktop ? 56 : 40),
-
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
                       child: Text(
@@ -46,7 +122,6 @@ class _TelaloginState extends State<Telalogin> {
                         ),
                       ),
                     ),
-
                     Text(
                       'SPORT',
                       textAlign: TextAlign.center,
@@ -58,9 +133,7 @@ class _TelaloginState extends State<Telalogin> {
                         height: 0.9,
                       ),
                     ),
-
                     SizedBox(height: isDesktop ? 52 : 40),
-
                     Container(
                       width: size.width > 600 ? 460 : double.infinity,
                       padding: EdgeInsets.all(isDesktop ? 28 : 24),
@@ -87,9 +160,7 @@ class _TelaloginState extends State<Telalogin> {
                             ),
                             child: const BotaoToggle(),
                           ),
-
                           const SizedBox(height: 20),
-
                           Row(
                             children: const [
                               Icon(
@@ -107,10 +178,9 @@ class _TelaloginState extends State<Telalogin> {
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 8),
-
                           TextFormField(
+                            controller: usuarioController,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               filled: true,
@@ -132,9 +202,7 @@ class _TelaloginState extends State<Telalogin> {
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 18),
-
                           Row(
                             children: const [
                               Icon(
@@ -152,10 +220,9 @@ class _TelaloginState extends State<Telalogin> {
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 8),
-
                           TextFormField(
+                            controller: senhaController,
                             obscureText: !mostrarSenha,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
@@ -192,7 +259,6 @@ class _TelaloginState extends State<Telalogin> {
                               ),
                             ),
                           ),
-
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -206,23 +272,16 @@ class _TelaloginState extends State<Telalogin> {
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 20),
-
                           BotaoElevated(
-                            texto: "Acessar Sistema",
+                            texto: 'Acessar Sistema',
                             icone: Icons.arrow_forward,
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/dashboard-atleta',
-                              );
-                            },
+                            onPressed: fazerLogin,
+                            carregando: carregandoLogin,
                           ),
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 40),
                   ],
                 ),
