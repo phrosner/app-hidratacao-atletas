@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 
-class BotaoToggle extends StatefulWidget {
-  const BotaoToggle({super.key});
+/// 0 = Atleta, 1 = Treinador, 2 = Nutricionista
+class BotaoToggle extends StatelessWidget {
+  const BotaoToggle({
+    super.key,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
 
-  @override
-  State<BotaoToggle> createState() => _BotaoToggleState();
-}
-
-class _BotaoToggleState extends State<BotaoToggle> {
-  List<bool> selecionado = [true, false, false];
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final selecionado = List<bool>.generate(3, (i) => i == selectedIndex);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
       child: LayoutBuilder(
@@ -22,11 +25,7 @@ class _BotaoToggleState extends State<BotaoToggle> {
               child: ToggleButtons(
                 isSelected: selecionado,
                 onPressed: (int index) {
-                  setState(() {
-                    for (int i = 0; i < selecionado.length; i++) {
-                      selecionado[i] = i == index;
-                    }
-                  });
+                  onChanged(index);
                 },
                 color: const Color(0xFFE6BCBD),
                 selectedColor: const Color(0xFFFCDBDB),

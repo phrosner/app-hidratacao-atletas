@@ -23,8 +23,8 @@ public class UsuarioService {
         return repository.save(usuario);
     }
 
-    public Optional<Usuario> autenticar(String usuario, String senha) {
+    /** Credenciais validas (usuario + senha), sem checar perfil da tela. */
+    public Optional<Usuario> buscarPorUsuarioESenha(String usuario, String senha) {
         return repository.findByUsuarioAndSenha(usuario, senha);
     }
 }
-

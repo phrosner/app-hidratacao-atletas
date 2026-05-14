@@ -14,6 +14,8 @@ class Telalogin extends StatefulWidget {
 class _TelaloginState extends State<Telalogin> {
   bool mostrarSenha = false;
   bool carregandoLogin = false;
+  /// 0 = Atleta, 1 = Treinador, 2 = Nutricionista (deve bater com o cadastro no banco).
+  int _perfilSelecionado = 0;
   final TextEditingController usuarioController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
 
@@ -22,6 +24,42 @@ class _TelaloginState extends State<Telalogin> {
     usuarioController.dispose();
     senhaController.dispose();
     super.dispose();
+  }
+
+  static String _tipoLoginApi(int perfilIndex) {
+    switch (perfilIndex) {
+      case 1:
+        return 'TREINADOR';
+      case 2:
+        return 'NUTRICIONISTA';
+      case 0:
+      default:
+        return 'ATLETA';
+    }
+  }
+
+  String _mensagemErroHttp(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['erro'] != null) {
+        return decoded['erro'].toString();
+      }
+    } catch (_) {}
+    if (body.isNotEmpty) return body;
+    return 'Erro inesperado';
+  }
+
+  void _navegarAposLogin(String tipoUsuario) {
+    switch (tipoUsuario) {
+      case 'TREINADOR':
+      case 'NUTRICIONISTA':
+        Navigator.pushReplacementNamed(context, '/dashboard');
+        break;
+      case 'ATLETA':
+      default:
+        Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+        break;
+    }
   }
 
   String getApiBaseUrl() {
@@ -53,23 +91,43 @@ class _TelaloginState extends State<Telalogin> {
       final response = await http.post(
         Uri.parse('${getApiBaseUrl()}/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'usuario': usuario, 'senha': senha}),
+        body: jsonEncode({
+          'usuario': usuario,
+          'senha': senha,
+          'tipoLogin': _tipoLoginApi(_perfilSelecionado),
+        }),
       );
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final tipo = data is Map && data['tipoUsuario'] != null
+            ? data['tipoUsuario'].toString()
+            : _tipoLoginApi(_perfilSelecionado);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login bem sucedido')),
         );
-        Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+        _navegarAposLogin(tipo);
       } else if (response.statusCode == 401) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login inválido')),
+          SnackBar(content: Text(_mensagemErroHttp(response.body))),
+        );
+      } else if (response.statusCode == 403) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_mensagemErroHttp(response.body))),
+        );
+      } else if (response.statusCode == 400) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_mensagemErroHttp(response.body))),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro no login: ${response.statusCode}')),
+          SnackBar(
+            content: Text(
+              'Erro no login (${response.statusCode}): ${_mensagemErroHttp(response.body)}',
+            ),
+          ),
         );
       }
     } catch (_) {
@@ -111,7 +169,7 @@ class _TelaloginState extends State<Telalogin> {
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
                       child: Text(
-                        'SÃO CAMILO',
+                        'HYDRA',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: const Color(0xFFFFD6DA),
@@ -123,7 +181,7 @@ class _TelaloginState extends State<Telalogin> {
                       ),
                     ),
                     Text(
-                      'SPORT',
+                      'TRACK',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: const Color(0xFFFF4D6D),
@@ -158,7 +216,12 @@ class _TelaloginState extends State<Telalogin> {
                               color: const Color(0xFF442F30),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const BotaoToggle(),
+                            child: BotaoToggle(
+                              selectedIndex: _perfilSelecionado,
+                              onChanged: (i) {
+                                setState(() => _perfilSelecionado = i);
+                              },
+                            ),
                           ),
                           const SizedBox(height: 20),
                           Row(

@@ -21,7 +21,9 @@ public class Usuario {
     private TipoUsuario tipoUsuario;
 
     public enum TipoUsuario {
-        ATLETA, TREINADOR
+        ATLETA,
+        TREINADOR,
+        NUTRICIONISTA
     }
 
     private Boolean ativo;
