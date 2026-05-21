@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
-import 'package:hidratrack/Botoes/BotaoClass.dart';
+import 'package:http/http.dart' as http;
 
 class Telalogin extends StatefulWidget {
   const Telalogin({super.key});
@@ -13,10 +13,18 @@ class Telalogin extends StatefulWidget {
 }
 
 class _TelaloginState extends State<Telalogin> {
+  static const _background = Color(0xFF101010);
+  static const _surface = Color(0xFF1B1B1B);
+  static const _surfaceLight = Color(0xFF242424);
+  static const _lime = Color(0xFFB9FF00);
+  static const _cyan = Color(0xFF00E5FF);
+  static const _text = Color(0xFFF5F5F5);
+  static const _muted = Color(0xFF858585);
+
   bool mostrarSenha = false;
   bool carregandoLogin = false;
-  /// 0 = Atleta, 1 = Treinador, 2 = Nutricionista (deve bater com o cadastro no banco).
   int _perfilSelecionado = 0;
+
   final TextEditingController usuarioController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
 
@@ -50,7 +58,6 @@ class _TelaloginState extends State<Telalogin> {
     return 'Erro inesperado';
   }
 
-  /// Treinador e nutricionista: mesma área do app; início = dashboard do treinador.
   void _navegarAposLogin(String tipoUsuarioRaw) {
     final tipo = tipoUsuarioRaw.trim().toUpperCase();
     if (tipo == 'TREINADOR' || tipo == 'NUTRICIONISTA') {
@@ -76,14 +83,15 @@ class _TelaloginState extends State<Telalogin> {
 
     if (usuario.isEmpty || senha.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha usuário e senha')),
+        const SnackBar(
+          content: Text('Preencha usuario e senha'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
 
-    setState(() {
-      carregandoLogin = true;
-    });
+    setState(() => carregandoLogin = true);
 
     try {
       final response = await http.post(
@@ -104,27 +112,24 @@ class _TelaloginState extends State<Telalogin> {
             ? data['tipoUsuario'].toString().trim().toUpperCase()
             : _tipoLoginApi(_perfilSelecionado);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login bem sucedido')),
+          const SnackBar(
+            content: Text('Login bem sucedido'),
+            backgroundColor: _lime,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         _navegarAposLogin(tipo);
-      } else if (response.statusCode == 401) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_mensagemErroHttp(response.body))),
-        );
-      } else if (response.statusCode == 403) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_mensagemErroHttp(response.body))),
-        );
-      } else if (response.statusCode == 400) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_mensagemErroHttp(response.body))),
-        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Erro no login (${response.statusCode}): ${_mensagemErroHttp(response.body)}',
+              response.statusCode == 401 ||
+                      response.statusCode == 403 ||
+                      response.statusCode == 400
+                  ? _mensagemErroHttp(response.body)
+                  : 'Erro no login (${response.statusCode}): ${_mensagemErroHttp(response.body)}',
             ),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -132,225 +137,331 @@ class _TelaloginState extends State<Telalogin> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Não foi possível conectar ao backend em localhost:8080'),
+          content: Text(
+            'Nao foi possivel conectar ao backend em localhost:8080',
+          ),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          carregandoLogin = false;
-        });
-      }
+      if (mounted) setState(() => carregandoLogin = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width >= 900;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF1F0F10),
+      backgroundColor: _background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1040),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 32 : 20,
-                  vertical: isDesktop ? 28 : 0,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(18, 54, 18, 30),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildBrand(),
+                      const SizedBox(height: 82),
+                      _buildLoginCard(),
+                      const SizedBox(height: 78),
+                      _buildFooterStatus(),
+                    ]),
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    SizedBox(height: isDesktop ? 56 : 40),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Text(
-                        'HYDRA',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: const Color(0xFFFFD6DA),
-                          fontSize: isDesktop ? 72 : 54,
-                          fontFamily: 'Bebas Neue',
-                          letterSpacing: 2,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'TRACK',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: const Color(0xFFFF4D6D),
-                        fontSize: isDesktop ? 72 : 54,
-                        fontFamily: 'Bebas Neue',
-                        letterSpacing: 2,
-                        height: 0.9,
-                      ),
-                    ),
-                    SizedBox(height: isDesktop ? 52 : 40),
-                    Container(
-                      width: size.width > 600 ? 460 : double.infinity,
-                      padding: EdgeInsets.all(isDesktop ? 28 : 24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2B1718),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            blurRadius: 25,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF442F30),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: BotaoToggle(
-                              selectedIndex: _perfilSelecionado,
-                              onChanged: (i) {
-                                setState(() => _perfilSelecionado = i);
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: const [
-                              Icon(
-                                Icons.person_outline,
-                                color: Color(0xFFE6BCBD),
-                                size: 14,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'Identificador',
-                                style: TextStyle(
-                                  color: Color(0xFFE6BCBD),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: usuarioController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: const Color(0xFF3A2223),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              labelText: 'Email ou ID',
-                              floatingLabelBehavior:
-                                  FloatingLabelBehavior.never,
-                              labelStyle: const TextStyle(
-                                color: Color(0xAAE6BCBD),
-                                fontSize: 11,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: const [
-                              Icon(
-                                Icons.lock_outline,
-                                color: Color(0xFFE6BCBD),
-                                size: 14,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'Senha',
-                                style: TextStyle(
-                                  color: Color(0xFFE6BCBD),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: senhaController,
-                            obscureText: !mostrarSenha,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: const Color(0xFF3A2223),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              labelText: 'Senha',
-                              floatingLabelBehavior:
-                                  FloatingLabelBehavior.never,
-                              labelStyle: const TextStyle(
-                                color: Color(0xAAE6BCBD),
-                                fontSize: 11,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 16,
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  mostrarSenha
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
-                                  color: const Color(0xAAE6BCBD),
-                                  size: 18,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    mostrarSenha = !mostrarSenha;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {},
-                              child: const Text(
-                                'Esqueceu a senha?',
-                                style: TextStyle(
-                                  color: Color(0xFF82CFFF),
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          BotaoElevated(
-                            texto: 'Acessar Sistema',
-                            icone: Icons.arrow_forward,
-                            onPressed: fazerLogin,
-                            carregando: carregandoLogin,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBrand() {
+    return Column(
+      children: const [
+        Icon(Icons.water_drop, color: _lime, size: 42),
+        SizedBox(height: 20),
+        Text(
+          'H2OTRACK',
+          style: TextStyle(
+            color: _lime,
+            fontSize: 39,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+        SizedBox(height: 16),
+        Text(
+          'CYBER-ATHLETIC PERFORMANCE CNIP',
+          style: TextStyle(
+            color: _muted,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(30, 28, 30, 28),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: _cyan.withValues(alpha: 0.12),
+            blurRadius: 50,
+            offset: const Offset(0, 34),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildProfileToggle(),
+          const SizedBox(height: 26),
+          _buildFieldLabel(Icons.person_outline, 'IDENTIFICADOR'),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: usuarioController,
+            hint: 'Email ou ID',
+            obscure: false,
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildFieldLabel(Icons.lock_outline, 'SENHA'),
+              const Spacer(),
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 24),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Esqueceu?',
+                  style: TextStyle(
+                    color: _cyan,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: senhaController,
+            hint: '********',
+            obscure: !mostrarSenha,
+            suffix: IconButton(
+              onPressed: () => setState(() => mostrarSenha = !mostrarSenha),
+              icon: Icon(
+                mostrarSenha ? Icons.visibility : Icons.visibility_off,
+                color: _muted,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          _buildLoginButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileToggle() {
+    const labels = ['Atleta', 'Nutrição', 'Treinador'];
+
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++)
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () {
+                  setState(() {
+                    _perfilSelecionado = i == 1 ? 2 : (i == 2 ? 1 : 0);
+                  });
+                },
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _isToggleSelected(i)
+                        ? _surfaceLight
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      labels[i],
+                      style: TextStyle(
+                        color: _isToggleSelected(i) ? _lime : _muted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  bool _isToggleSelected(int visualIndex) {
+    return switch (visualIndex) {
+      0 => _perfilSelecionado == 0,
+      1 => _perfilSelecionado == 2,
+      2 => _perfilSelecionado == 1,
+      _ => false,
+    };
+  }
+
+  Widget _buildFieldLabel(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: _muted, size: 14),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(
+            color: _muted,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.6,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required bool obscure,
+    Widget? suffix,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      style: const TextStyle(color: _text, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: _muted, fontSize: 14),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: Colors.black,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 18,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: BorderSide(color: _lime.withValues(alpha: 0.22)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: const BorderSide(color: _lime),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 66,
+      child: FilledButton(
+        onPressed: carregandoLogin ? null : fazerLogin,
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          disabledBackgroundColor: _muted,
+          foregroundColor: Colors.black,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 12,
+          shadowColor: _lime.withValues(alpha: 0.55),
+        ),
+        child: carregandoLogin
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'ACESSAR SISTEMA',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(width: 10),
+                  Icon(Icons.arrow_forward, size: 23),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFooterStatus() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: const [
+        _StatusDot(color: _lime, text: 'HYPER ENVINE'),
+        SizedBox(width: 46),
+        _StatusDot(color: _cyan, text: 'ENCRYPTED SYNC'),
+      ],
+    );
+  }
+}
+
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.color, required this.text});
+
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFF858585),
+            fontSize: 8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Componentes/ResponsiveContent.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
 
 class TeladadosEquipe extends StatefulWidget {
@@ -12,33 +11,45 @@ class TeladadosEquipe extends StatefulWidget {
 }
 
 class _TeladadosEquipeState extends State<TeladadosEquipe> {
+  static const _background = Color(0xFF101010);
+  static const _surface = Color(0xFF1B1B1B);
+  static const _surfaceLight = Color(0xFF242424);
+  static const _lime = Color(0xFFB9FF00);
+  static const _cyan = Color(0xFF00E5FF);
+  static const _text = Color(0xFFF5F5F5);
+  static const _muted = Color(0xFF858585);
+  static const _danger = Color(0xFFD58686);
+
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
+  int _currentNavIndex = 1;
   String? _categoriaSelect;
   String? _modalidadeSelect;
 
   final List<String> categorias = [
-    'SUB-17',
-    'SUB-20',
-    'OLIMPICO',
-    'PROFISSIONAL',
-    'MASTER',
+    'Profissional',
+    'Elite Pro',
+    'Sub-20',
+    'Sub-17',
+    'Olimpico',
+    'Master',
   ];
 
   final List<String> modalidades = [
+    'CrossFit',
+    'Triathlon',
     'Futebol',
-    'Crossfit',
-    'Endurance',
     'Natacao',
+    'Endurance',
     'Atletismo',
   ];
 
   final List<Map<String, String>> _atletas = [
-    {'nome': 'Ricardo Santos', 'categoria': 'PESO PESADO'},
-    {'nome': 'Mariana Lima', 'categoria': 'ENDURANCE'},
-    {'nome': 'Bruno Oliveira', 'categoria': 'ELITE TRAINER'},
+    {'nome': 'Marcus V. Silva', 'categoria': 'ELITE PERFORMER'},
+    {'nome': 'Elena Rodrigues', 'categoria': 'POWER LIFTER'},
+    {'nome': 'Ricardo Neves', 'categoria': 'ENDURANCE PRO'},
   ];
 
   late List<Map<String, String>> _atletasFiltrados;
@@ -51,10 +62,21 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     _nomeController.text = equipe?.nome ?? 'Alpha Warriors Elite';
     _descricaoController.text =
         equipe?.descricao ??
-        'Equipe focada em alto rendimento e competicoes nacionais de endurance.';
-    _categoriaSelect = equipe?.categoria ?? 'PROFISSIONAL';
-    _modalidadeSelect = equipe?.modalidade ?? 'Crossfit';
+        'Equipe focada em alto rendimento e competicoes nacionais de endurance. Estrategia baseada em ciclos de intensidade progressiva.';
+    _categoriaSelect =
+        _normalizarValor(equipe?.categoria, categorias) ?? 'Profissional';
+    _modalidadeSelect =
+        _normalizarValor(equipe?.modalidade, modalidades) ?? 'CrossFit';
     _atletasFiltrados = List.of(_atletas);
+  }
+
+  String? _normalizarValor(String? value, List<String> options) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.toLowerCase();
+    for (final option in options) {
+      if (option.toLowerCase() == normalized) return option;
+    }
+    return null;
   }
 
   void _filtrarAtletas(String query) {
@@ -78,30 +100,57 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
   void _removerAtleta(Map<String, String> atleta) {
     setState(() {
       _atletas.remove(atleta);
-      final query = _searchController.text;
+      final query = _searchController.text.toLowerCase();
       _atletasFiltrados = query.isEmpty
           ? List.of(_atletas)
           : _atletas
                 .where(
-                  (atleta) =>
-                      atleta['nome']!.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ) ||
-                      atleta['categoria']!.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ),
+                  (item) =>
+                      item['nome']!.toLowerCase().contains(query) ||
+                      item['categoria']!.toLowerCase().contains(query),
                 )
                 .toList();
     });
   }
 
+  void _adicionarAtleta() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Busca de novos atletas em breve'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _salvarAlteracoes() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Alteracoes salvas com sucesso!'),
-        backgroundColor: Color(0xFFFF4D6D),
+        content: Text('Alteracoes salvas com sucesso'),
+        backgroundColor: _lime,
+        behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  void _navegarTela(int index) {
+    setState(() => _currentNavIndex = index);
+
+    switch (index) {
+      case 0:
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+        break;
+      case 1:
+        Navigator.of(context).pushReplacementNamed('/equipes');
+        break;
+      case 2:
+        Navigator.of(context).pushReplacementNamed('/graficos');
+        break;
+      case 3:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perfil do treinador em breve')),
+        );
+        break;
+    }
   }
 
   @override
@@ -114,73 +163,41 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width >= 900;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0003),
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFFFD6DA)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'EDITAR EQUIPE',
-          style: TextStyle(
-            color: Color(0xFFFFD6DA),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+      backgroundColor: _background,
+      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: ResponsiveContent(
-            maxWidth: 980,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionTitle(
-                  icon: Icons.info,
-                  title: 'DADOS DA EQUIPE',
-                  counter: null,
-                ),
-                const SizedBox(height: 16),
-                _buildDadosCard(isDesktop: isDesktop),
-                const SizedBox(height: 24),
-                _buildSectionTitle(
-                  icon: Icons.groups,
-                  title: 'ATLETAS NA EQUIPE',
-                  counter: '${_atletas.length} atletas',
-                ),
-                const SizedBox(height: 16),
-                _buildSearchBar(),
-                const SizedBox(height: 16),
-                if (_atletasFiltrados.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Text(
-                        'Nenhum atleta encontrado',
-                        style: TextStyle(color: Color(0xFF8B6B6C)),
-                      ),
-                    ),
-                  )
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _atletasFiltrados.length,
-                    itemBuilder: (context, index) {
-                      return _buildAtletaItem(_atletasFiltrados[index], index);
-                    },
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildTopBar(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('DADOS DA EQUIPE'),
+                      const SizedBox(height: 10),
+                      _buildDadosEquipe(),
+                      const SizedBox(height: 22),
+                      _buildRecruitmentHeader(),
+                      const SizedBox(height: 10),
+                      _buildRecruitmentActions(),
+                      const SizedBox(height: 14),
+                      if (_atletasFiltrados.isEmpty)
+                        _buildEmptyState()
+                      else
+                        for (var i = 0; i < _atletasFiltrados.length; i++)
+                          _buildAtletaItem(_atletasFiltrados[i], i),
+                      const SizedBox(height: 28),
+                      _buildSalvarButton(),
+                      const SizedBox(height: 24),
+                    ]),
                   ),
-                const SizedBox(height: 24),
-                _buildSalvarButton(),
-                const SizedBox(height: 24),
+                ),
               ],
             ),
           ),
@@ -189,151 +206,178 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     );
   }
 
-  Widget _buildSectionTitle({
-    required IconData icon,
-    required String title,
-    required String? counter,
-  }) {
+  Widget _buildTopBar() {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFFF4D6D), size: 20),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFFFFD6DA),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Bebas Neue',
-            letterSpacing: 1,
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: _text, size: 21),
+        ),
+        const SizedBox(width: 2),
+        const Text(
+          'EDITAR EQUIPE',
+          style: TextStyle(
+            color: _text,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        if (counter != null) ...[
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF5A3A3F),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              counter,
-              style: const TextStyle(
-                color: Color(0xFFFFD6DA),
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
+        const Spacer(),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_none, color: _text, size: 21),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          height: 34,
+          width: 34,
+          decoration: BoxDecoration(
+            color: _surfaceLight,
+            shape: BoxShape.circle,
+            border: Border.all(color: _cyan.withValues(alpha: 0.5)),
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'TR',
+            style: TextStyle(
+              color: _lime,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
             ),
           ),
-        ],
+        ),
       ],
     );
   }
 
-  Widget _buildDadosCard({required bool isDesktop}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D1B1B),
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: _lime,
+        fontSize: 11,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 2.2,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel('NOME DA EQUIPE'),
-          const SizedBox(height: 8),
-          _buildTextField(_nomeController, 'Nome da equipe'),
-          const SizedBox(height: 16),
-          if (isDesktop)
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('CATEGORIA'),
-                      const SizedBox(height: 8),
-                      _buildDropdown(
-                        value: _categoriaSelect,
-                        items: categorias,
-                        onChanged: (value) {
-                          setState(() {
-                            _categoriaSelect = value;
-                          });
-                        },
-                      ),
-                    ],
+    );
+  }
+
+  Widget _buildDadosEquipe() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('NOME DA EQUIPE'),
+        const SizedBox(height: 7),
+        _buildTextField(_nomeController, 'Nome da equipe', fontSize: 25),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('CATEGORIA'),
+                  const SizedBox(height: 7),
+                  _buildDropdown(
+                    value: _categoriaSelect,
+                    items: categorias,
+                    onChanged: (value) =>
+                        setState(() => _categoriaSelect = value),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('MODALIDADE'),
-                      const SizedBox(height: 8),
-                      _buildDropdown(
-                        value: _modalidadeSelect,
-                        items: modalidades,
-                        onChanged: (value) {
-                          setState(() {
-                            _modalidadeSelect = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('CATEGORIA'),
-                    const SizedBox(height: 8),
-                    _buildDropdown(
-                      value: _categoriaSelect,
-                      items: categorias,
-                      onChanged: (value) {
-                        setState(() {
-                          _categoriaSelect = value;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('MODALIDADE'),
-                    const SizedBox(height: 8),
-                    _buildDropdown(
-                      value: _modalidadeSelect,
-                      items: modalidades,
-                      onChanged: (value) {
-                        setState(() {
-                          _modalidadeSelect = value;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          const SizedBox(height: 16),
-          _buildLabel('DESCRICAO'),
-          const SizedBox(height: 8),
-          _buildTextAreaField(
-            _descricaoController,
-            'Objetivos e detalhes da equipe...',
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('MODALIDADE'),
+                  const SizedBox(height: 7),
+                  _buildDropdown(
+                    value: _modalidadeSelect,
+                    items: modalidades,
+                    onChanged: (value) =>
+                        setState(() => _modalidadeSelect = value),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildLabel('DESCRICAO TATICA'),
+        const SizedBox(height: 7),
+        _buildTextAreaField(
+          _descricaoController,
+          'Descreva o foco e os objetivos da equipe...',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecruitmentHeader() {
+    return Row(
+      children: [
+        const Text(
+          'RECRUTAMENTO DE ATLETAS',
+          style: TextStyle(
+            color: _lime,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _lime,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${_atletas.length.toString().padLeft(2, '0')} ATLETAS',
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecruitmentActions() {
+    return Row(
+      children: [
+        Expanded(child: _buildSearchBar()),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 44,
+          child: FilledButton.icon(
+            onPressed: _adicionarAtleta,
+            style: FilledButton.styleFrom(
+              backgroundColor: _lime,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            icon: const Icon(Icons.add, size: 17),
+            label: const Text(
+              'ADICIONAR',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -341,55 +385,54 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     return Text(
       text,
       style: const TextStyle(
-        color: Color(0xFF8B6B6C),
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1,
+        color: _muted,
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.4,
       ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A2A),
-        borderRadius: BorderRadius.circular(8),
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint, {
+    double fontSize = 13,
+  }) {
+    return TextField(
+      controller: controller,
+      style: TextStyle(
+        color: _text,
+        fontSize: fontSize,
+        fontWeight: fontSize > 18 ? FontWeight.w900 : FontWeight.w500,
       ),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF8B6B6C)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
-      ),
+      decoration: _inputDecoration(hint),
     );
   }
 
   Widget _buildTextAreaField(TextEditingController controller, String hint) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A2A),
-        borderRadius: BorderRadius.circular(8),
+    return TextField(
+      controller: controller,
+      minLines: 4,
+      maxLines: 4,
+      style: const TextStyle(color: _text, fontSize: 14, height: 1.35),
+      decoration: _inputDecoration(hint),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF505050), fontSize: 12),
+      filled: true,
+      fillColor: Colors.black,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
       ),
-      child: TextField(
-        controller: controller,
-        maxLines: 4,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF8B6B6C)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: const BorderSide(color: _lime),
       ),
     );
   }
@@ -399,134 +442,222 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A2A),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        underline: const SizedBox(),
-        iconEnabledColor: const Color(0xFF8B6B6C),
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        dropdownColor: const Color(0xFF2D1B1B),
-        items: items.map((value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(value),
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      isExpanded: true,
+      dropdownColor: Colors.black,
+      icon: const Icon(Icons.keyboard_arrow_down, color: _lime, size: 22),
+      style: const TextStyle(color: _text, fontSize: 13),
+      decoration: _inputDecoration('Selecione'),
+      items: items
+          .map(
+            (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item, overflow: TextOverflow.ellipsis),
             ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
+          )
+          .toList(),
+      onChanged: onChanged,
     );
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D1B1B),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return SizedBox(
+      height: 44,
       child: TextField(
         controller: _searchController,
         onChanged: _filtrarAtletas,
-        style: const TextStyle(color: Colors.white),
-        decoration: const InputDecoration(
-          hintText: 'Buscar atleta para adicionar...',
-          hintStyle: TextStyle(color: Color(0xFF8B6B6C)),
-          prefixIcon: Icon(Icons.search, color: Color(0xFF8B6B6C)),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        style: const TextStyle(color: _text, fontSize: 12),
+        decoration: InputDecoration(
+          hintText: 'Buscar novo atleta...',
+          hintStyle: const TextStyle(color: _muted, fontSize: 12),
+          prefixIcon: const Icon(Icons.search, color: _text, size: 18),
+          filled: true,
+          fillColor: Colors.black,
+          contentPadding: EdgeInsets.zero,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(7),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(7),
+            borderSide: const BorderSide(color: _lime),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAtletaItem(Map<String, String> atleta, int index) {
+  Widget _buildEmptyState() {
     return Container(
+      height: 88,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'Nenhum atleta encontrado',
+        style: TextStyle(color: _muted, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildAtletaItem(Map<String, String> atleta, int index) {
+    final accents = [_lime, _cyan, const Color(0xFF00A884)];
+    final accent = accents[index % accents.length];
+
+    return Container(
+      height: 88,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D1B1B),
-        borderRadius: BorderRadius.circular(8),
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: const Color(0xFF3A2A2A),
+          Container(
+            height: 54,
+            width: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _surfaceLight,
+              border: Border.all(color: accent, width: 2),
+            ),
+            alignment: Alignment.center,
             child: Text(
-              atleta['nome']![0],
-              style: const TextStyle(
-                color: Color(0xFFFFD6DA),
-                fontWeight: FontWeight.bold,
+              _initials(atleta['nome']!),
+              style: TextStyle(
+                color: accent,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   atleta['nome']!,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD6DA),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   atleta['categoria']!,
-                  style: const TextStyle(
-                    color: Color(0xFF8B6B6C),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
                 ),
               ],
             ),
           ),
           IconButton(
+            tooltip: 'Remover atleta',
             onPressed: () => _removerAtleta(atleta),
-            icon: const Icon(
-              Icons.delete_outline,
-              color: Color(0xFFFFD6DA),
-              size: 22,
-            ),
+            icon: const Icon(Icons.delete_outline, color: _danger, size: 23),
           ),
         ],
       ),
     );
   }
 
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
+  }
+
   Widget _buildSalvarButton() {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
+      height: 66,
+      child: FilledButton.icon(
         onPressed: _salvarAlteracoes,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF4D6D),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          foregroundColor: Colors.black,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
         ),
-        child: const Text(
+        icon: const Icon(Icons.save_outlined, size: 22),
+        label: const Text(
           'SALVAR ALTERACOES',
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.4,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    const items = [
+      (Icons.home_rounded, 'HOME'),
+      (Icons.groups_2_outlined, 'EQUIPES'),
+      (Icons.history_rounded, 'HISTORICO'),
+      (Icons.person_outline_rounded, 'PERFIL'),
+    ];
+
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          for (var i = 0; i < items.length; i++)
+            InkWell(
+              onTap: () => _navegarTela(i),
+              child: SizedBox(
+                width: 74,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      items[i].$1,
+                      color: _currentNavIndex == i ? _lime : _muted,
+                      size: 22,
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        items[i].$2,
+                        style: TextStyle(
+                          color: _currentNavIndex == i ? _lime : _muted,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

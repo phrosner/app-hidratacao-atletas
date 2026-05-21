@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Componentes/ResponsiveContent.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 
 class TelaVisualizarAtletas extends StatefulWidget {
@@ -12,21 +11,25 @@ class TelaVisualizarAtletas extends StatefulWidget {
 }
 
 class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
+  static const _background = Color(0xFF101010);
+  static const _surface = Color(0xFF1B1B1B);
+  static const _surfaceLight = Color(0xFF242424);
+  static const _lime = Color(0xFFB9FF00);
+  static const _text = Color(0xFFF5F5F5);
+  static const _muted = Color(0xFF858585);
+
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _idadeController = TextEditingController();
   final TextEditingController _modalidadeController = TextEditingController();
-  final TextEditingController _posicaoController = TextEditingController();
   final TextEditingController _equipeController = TextEditingController();
+  final TextEditingController _categoriaController = TextEditingController();
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
-  final TextEditingController _gorduraController = TextEditingController();
-  final TextEditingController _vo2Controller = TextEditingController();
-  final TextEditingController _frequenciaController = TextEditingController();
 
-  String? _sexoSelect;
+  String? _generoSelect;
   String? _nivelSelect;
 
-  final List<String> sexo = ['Masculino', 'Feminino'];
+  final List<String> generos = ['Masculino', 'Feminino'];
   final List<String> niveis = [
     'Iniciante',
     'Intermediario',
@@ -42,14 +45,11 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
     _nomeController.text = atleta?.nome ?? 'Ricardo Santos Oliveira';
     _idadeController.text = '24';
     _modalidadeController.text = 'Crossfit / Levantamento de Peso';
-    _posicaoController.text = atleta?.categoria ?? 'Powerlifting';
-    _equipeController.text = 'Alpha Performance';
+    _equipeController.text = 'Powerlifting Team';
+    _categoriaController.text = atleta?.categoria ?? 'Alpha Performance';
     _pesoController.text = '88.5';
     _alturaController.text = '184';
-    _gorduraController.text = '12';
-    _vo2Controller.text = '54.2';
-    _frequenciaController.text = '48';
-    _sexoSelect = sexo.first;
+    _generoSelect = generos.first;
     _nivelSelect = 'Avancado';
   }
 
@@ -58,123 +58,44 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
     _nomeController.dispose();
     _idadeController.dispose();
     _modalidadeController.dispose();
-    _posicaoController.dispose();
     _equipeController.dispose();
+    _categoriaController.dispose();
     _pesoController.dispose();
     _alturaController.dispose();
-    _gorduraController.dispose();
-    _vo2Controller.dispose();
-    _frequenciaController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width >= 900;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0003),
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFFFFD6DA)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'VISUALIZAR ATLETA',
-          style: TextStyle(
-            color: Color(0xFFFFD6DA),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFFF4D6D),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFF2D1B1B),
-                child: Text(
-                  _nomeController.text.isEmpty ? 'A' : _nomeController.text[0],
-                  style: const TextStyle(
-                    color: Color(0xFFFFD6DA),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: _background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: ResponsiveContent(
-            maxWidth: 1040,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isDesktop)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionTitle(
-                              color: const Color(0xFFFF4D6D),
-                              title: 'INFORMACOES PESSOAIS',
-                            ),
-                            const SizedBox(height: 16),
-                            _buildPersonalCard(),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionTitle(
-                              color: const Color(0xFF6B9BD1),
-                              title: 'PERFIL ESPORTIVO',
-                            ),
-                            const SizedBox(height: 16),
-                            _buildSportsCard(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                else ...[
-                  _buildSectionTitle(
-                    color: const Color(0xFFFF4D6D),
-                    title: 'INFORMACOES PESSOAIS',
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildTopBar(),
+                      const SizedBox(height: 30),
+                      _buildSectionTitle('INFORMACOES PESSOAIS'),
+                      const SizedBox(height: 12),
+                      _buildPersonalCard(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('PERFIL ESPORTIVO'),
+                      const SizedBox(height: 12),
+                      _buildSportsCard(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('DADOS FISIOLOGICOS'),
+                      const SizedBox(height: 14),
+                      _buildPhysiologyCards(),
+                    ]),
                   ),
-                  const SizedBox(height: 16),
-                  _buildPersonalCard(),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(
-                    color: const Color(0xFF6B9BD1),
-                    title: 'PERFIL ESPORTIVO',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSportsCard(),
-                ],
-                const SizedBox(height: 24),
-                _buildSectionTitle(
-                  color: const Color(0xFFFF4D6D),
-                  title: 'DADOS FISIOLOGICOS',
                 ),
-                const SizedBox(height: 16),
-                _buildPhysiologyCards(),
-                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -183,26 +104,65 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
     );
   }
 
-  Widget _buildSectionTitle({required Color color, required String title}) {
+  Widget _buildTopBar() {
     return Row(
       children: [
-        Container(
-          width: 4,
-          height: 24,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close, color: _text, size: 24),
+        ),
+        const SizedBox(width: 6),
+        const Expanded(
+          child: Text(
+            'VISUALIZAR ATLETA',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: _text,
+              fontSize: 21,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
+        Container(
+          height: 42,
+          width: 42,
+          decoration: BoxDecoration(
+            color: _surfaceLight,
+            shape: BoxShape.circle,
+            border: Border.all(color: _lime, width: 1.4),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _initials(_nomeController.text),
+            style: const TextStyle(
+              color: _lime,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      children: [
+        Container(width: 4, height: 20, color: _lime),
+        const SizedBox(width: 9),
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFFFFD6DA),
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Bebas Neue',
-            letterSpacing: 1,
+            color: _lime,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.2,
           ),
         ),
       ],
@@ -210,11 +170,11 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
   }
 
   Widget _buildPersonalCard() {
-    return _buildCard(
+    return _buildPanel(
       children: [
         _buildLabel('NOME COMPLETO'),
         const SizedBox(height: 8),
-        _buildTextField(_nomeController, 'Nome completo'),
+        _buildReadOnlyField(_nomeController, 'Nome completo'),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -224,21 +184,18 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
                 children: [
                   _buildLabel('IDADE'),
                   const SizedBox(height: 8),
-                  _buildTextField(_idadeController, 'Idade'),
+                  _buildReadOnlyField(_idadeController, 'Idade'),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('SEXO'),
+                  _buildLabel('GENERO'),
                   const SizedBox(height: 8),
-                  _buildDropdown(
-                    value: _sexoSelect,
-                    items: sexo,
-                  ),
+                  _buildDisabledDropdown(value: _generoSelect, items: generos),
                 ],
               ),
             ),
@@ -249,17 +206,18 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
   }
 
   Widget _buildSportsCard() {
-    return _buildCard(
+    return _buildPanel(
       children: [
         _buildLabel('MODALIDADE'),
         const SizedBox(height: 8),
-        _buildTextField(_modalidadeController, 'Modalidade'),
+        _buildReadOnlyField(_modalidadeController, 'Modalidade'),
         const SizedBox(height: 16),
-        _buildLabel('POSICAO / ESPECIALIDADE'),
+        _buildLabel('CLUBE / EQUIPE ATUAL'),
         const SizedBox(height: 8),
-        _buildTextField(_posicaoController, 'Especialidade'),
+        _buildReadOnlyField(_equipeController, 'Equipe atual'),
         const SizedBox(height: 16),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
@@ -267,21 +225,18 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
                 children: [
                   _buildLabel('NIVEL'),
                   const SizedBox(height: 8),
-                  _buildDropdown(
-                    value: _nivelSelect,
-                    items: niveis,
-                  ),
+                  _buildDisabledDropdown(value: _nivelSelect, items: niveis),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('EQUIPE'),
+                  _buildLabel('CATEGORIA'),
                   const SizedBox(height: 8),
-                  _buildTextField(_equipeController, 'Equipe'),
+                  _buildReadOnlyField(_categoriaController, 'Categoria'),
                 ],
               ),
             ),
@@ -292,73 +247,35 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
   }
 
   Widget _buildPhysiologyCards() {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildMetricCard(
-                label: 'PESO (KG)',
-                controller: _pesoController,
-                unit: 'KG',
-                color: const Color(0xFFFF4D6D),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildMetricCard(
-                label: 'ALTURA (CM)',
-                controller: _alturaController,
-                unit: 'CM',
-                color: const Color(0xFF6B9BD1),
-              ),
-            ),
-          ],
+        Expanded(
+          child: _buildMetricCard(
+            label: 'PESO ATUAL (KG)',
+            value: _pesoController.text,
+            unit: 'KG',
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildCard(
-          children: [
-            Row(
-              children: [
-                _buildLabel('GORDURA CORPORAL (BF%)'),
-                const Spacer(),
-                Text(
-                  '${_gorduraController.text}%',
-                  style: const TextStyle(
-                    color: Color(0xFF6B9BD1),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: LinearProgressIndicator(
-                value: (_parseDouble(_gorduraController.text) / 40).clamp(0, 1),
-                minHeight: 8,
-                color: const Color(0xFF6B9BD1),
-                backgroundColor: const Color(0xFF3A2A2A),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildInfoRow('VO2 Maximo', '${_vo2Controller.text} ml/kg/min'),
-            const SizedBox(height: 18),
-            _buildInfoRow('Frequencia de Repouso', '${_frequenciaController.text} bpm'),
-          ],
+        const SizedBox(width: 14),
+        Expanded(
+          child: _buildMetricCard(
+            label: 'ALTURA (CM)',
+            value: _alturaController.text,
+            unit: 'CM',
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildCard({required List<Widget> children}) {
+  Widget _buildPanel({required List<Widget> children}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D1B1B),
-        borderRadius: BorderRadius.circular(12),
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,115 +288,127 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
     return Text(
       text,
       style: const TextStyle(
-        color: Color(0xFF8B6B6C),
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1,
+        color: _muted,
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.7,
       ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A2A),
-        borderRadius: BorderRadius.circular(8),
+  Widget _buildReadOnlyField(
+    TextEditingController controller,
+    String hint, {
+    double? minHeight,
+  }) {
+    return TextField(
+      controller: controller,
+      readOnly: true,
+      minLines: minHeight == null ? 1 : 2,
+      maxLines: minHeight == null ? 1 : 2,
+      style: const TextStyle(color: _text, fontSize: 14, height: 1.35),
+      decoration: _inputDecoration(hint),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF505050), fontSize: 12),
+      filled: true,
+      fillColor: Colors.black,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      child: TextField(
-        controller: controller,
-        readOnly: true,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF8B6B6C)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: const BorderSide(color: _lime),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
       ),
     );
   }
 
-  Widget _buildDropdown({
+  Widget _buildDisabledDropdown({
     required String? value,
     required List<String> items,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A2A),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        underline: const SizedBox(),
-        iconEnabledColor: const Color(0xFF8B6B6C),
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        dropdownColor: const Color(0xFF2D1B1B),
-        items: items.map((item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(item),
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      isExpanded: true,
+      dropdownColor: Colors.black,
+      icon: const Icon(Icons.keyboard_arrow_down, color: _muted, size: 20),
+      style: const TextStyle(color: _text, fontSize: 14),
+      decoration: _inputDecoration('Selecione'),
+      items: items
+          .map(
+            (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item, overflow: TextOverflow.ellipsis),
             ),
-          );
-        }).toList(),
-        onChanged: null,
-        disabledHint: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            value ?? '',
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-          ),
-        ),
+          )
+          .toList(),
+      onChanged: null,
+      disabledHint: Text(
+        value ?? '',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: _text, fontSize: 14),
       ),
     );
   }
 
   Widget _buildMetricCard({
     required String label,
-    required TextEditingController controller,
+    required String value,
     required String unit,
-    required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      height: 96,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D1B1B),
-        borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: color, width: 4)),
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildLabel(label),
-          const SizedBox(height: 8),
+          const Spacer(),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  readOnly: true,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD6DA),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.bottomLeft,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: _text,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
                   ),
                 ),
               ),
-              Text(
-                unit,
-                style: const TextStyle(color: Color(0xFF8B6B6C), fontSize: 12),
+              const SizedBox(width: 5),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  unit,
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ],
           ),
@@ -488,24 +417,11 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: Color(0xFF8B6B6C), fontSize: 14),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(color: Color(0xFFFFD6DA), fontSize: 14),
-        ),
-      ],
-    );
-  }
-
-  double _parseDouble(String value) {
-    return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return 'AT';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
   }
 }
