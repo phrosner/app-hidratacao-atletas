@@ -577,26 +577,39 @@ class _PosSessaoState extends State<PosSessao> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           for (var i = 0; i < items.length; i++)
-            SizedBox(
-              width: 68,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(items[i].$1, color: i == 0 ? _lime : _muted, size: 18),
-                  const SizedBox(height: 3),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      items[i].$2,
-                      style: TextStyle(
-                        color: i == 0 ? _lime : _muted,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.7,
+            InkWell(
+              onTap: () {
+                if (i == 0) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.dashboardAtleta);
+                } else if (i == 1) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.historicoAtleta);
+                }
+              },
+              child: SizedBox(
+                width: 68,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(items[i].$1, color: i == 0 ? _lime : _muted, size: 18),
+                    const SizedBox(height: 3),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        items[i].$2,
+                        style: TextStyle(
+                          color: i == 0 ? _lime : _muted,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.7,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],
