@@ -7,6 +7,7 @@ import 'package:hidratrack/Telas/TeladadosAtletas.dart';
 import 'package:hidratrack/Telas/Telagraficos.dart';
 import 'package:hidratrack/Telas/TeladashboardAtleta.dart';
 import 'package:hidratrack/Telas/TelainiciarTreino.dart';
+import 'package:hidratrack/Telas/Pos_sessao.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         '/dados-atleta': (context) => const TeladadosAtletas(),
         '/graficos': (context) => const Telagraficos(),
         AppRotas.iniciarTreino: (context) => const TelaIniciarTreino(),
+        AppRotas.posSessao: (context) => const PosSessao(),
         AppRotas.dashboardAtleta: (context) => TelaDashboardAtleta(
           data: AtletaDashboardData.fromHydrationMetrics(
             athleteName: 'Ricardo',

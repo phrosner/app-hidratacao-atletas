@@ -8,4 +8,7 @@ abstract final class AppRotas {
 
   /// Inicio de uma nova sessao de treino do atleta.
   static const String iniciarTreino = '/iniciar-treino';
+
+  /// Registro pos-sessao do atleta.
+  static const String posSessao = '/pos-sessao';
 }

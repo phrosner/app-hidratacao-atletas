@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/app_rotas.dart';
 
 class TelaIniciarTreino extends StatefulWidget {
   const TelaIniciarTreino({super.key});
@@ -26,13 +27,9 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
   }
 
   void _iniciarTreino() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Treino iniciado com ${_pesoController.text} kg'),
-        backgroundColor: _lime,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final pesoInicial =
+        double.tryParse(_pesoController.text.replaceAll(',', '.')) ?? 0;
+    Navigator.of(context).pushNamed(AppRotas.posSessao, arguments: pesoInicial);
   }
 
   @override
