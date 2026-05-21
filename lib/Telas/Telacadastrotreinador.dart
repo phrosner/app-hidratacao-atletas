@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Botoes/BotaoClass.dart';
-import 'package:hidratrack/Componentes/ResponsiveContent.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
 
 class TelaCadastroTreinador extends StatefulWidget {
@@ -11,163 +9,317 @@ class TelaCadastroTreinador extends StatefulWidget {
 }
 
 class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
+  static const _background = Color(0xFF101010);
+  static const _surface = Color(0xFF1B1B1B);
+  static const _lime = Color(0xFFB9FF00);
+  static const _cyan = Color(0xFF00E5FF);
+  static const _text = Color(0xFFF5F5F5);
+  static const _muted = Color(0xFF858585);
+
   bool _obscureSenha = true;
   bool _obscureConfirmacao = true;
+
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _nascimentoController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
+  final TextEditingController _confirmacaoController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _nascimentoController.dispose();
+    _senhaController.dispose();
+    _confirmacaoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selecionarData() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - 30, now.month, now.day),
+      firstDate: DateTime(1940),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: _lime,
+              onPrimary: Colors.black,
+              surface: _surface,
+              onSurface: _text,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked == null) return;
+    _nascimentoController.text =
+        '${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}/${picked.year}';
+  }
+
+  void _salvarCadastro() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cadastro salvo com sucesso'),
+        backgroundColor: _lime,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const Telalogin()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0003),
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const Telalogin()),
-            );
-          },
-          icon: const Icon(Icons.arrow_back, color: Colors.pinkAccent),
-        ),
-        title: const Text(
-          "CADASTRO DE TREINADOR",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: ResponsiveContent(
-          maxWidth: 900,
-          mobilePadding: const EdgeInsets.all(18),
-          child: Column(
-            children: [
-              _buildSection("INFORMAÇÕES PESSOAIS", [
-                _buildInput("NOME COMPLETO", "Seu nome completo"),
-                _buildInput("E-MAIL", "treinador@exemplo.com"),
-                _buildInput("NASCIMENTO", "mm/dd/yyyy"),
-              ]),
-
-              const SizedBox(height: 20),
-
-              _buildSection("ACESSO", [
-                _buildInput(
-                  "SENHA",
-                  "........",
-                  isObscure: _obscureSenha,
-                  suffix: IconButton(
-                    icon: Icon(
-                      _obscureSenha
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: Colors.white38,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscureSenha = !_obscureSenha),
+      backgroundColor: _background,
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(18, 48, 18, 34),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildHeader(),
+                      const SizedBox(height: 56),
+                      _buildCadastroCard(),
+                    ]),
                   ),
                 ),
-                _buildInput(
-                  "CONFIRMAÇÃO DE SENHA",
-                  "........",
-                  isObscure: _obscureConfirmacao,
-                  suffix: IconButton(
-                    icon: Icon(
-                      _obscureConfirmacao
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: Colors.white38,
-                    ),
-                    onPressed: () => setState(
-                      () => _obscureConfirmacao = !_obscureConfirmacao,
-                    ),
-                  ),
-                ),
-              ]),
-
-              const SizedBox(height: 30),
-
-              BotaoElevated(
-                texto: "SALVAR CADASTRO",
-                icone: Icons.check_circle_outline,
-                onPressed: () {},
-              ),
-
-              const SizedBox(height: 20),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSection(String titulo, List<Widget> children) {
+  Widget _buildHeader() {
+    return Column(
+      children: const [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.water_drop, color: _lime, size: 30),
+            SizedBox(width: 8),
+            Text(
+              'H2OTRACK',
+              style: TextStyle(
+                color: _lime,
+                fontSize: 23,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 30),
+        Text(
+          'CADASTRO TREINADOR',
+          style: TextStyle(
+            color: _text,
+            fontSize: 26,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCadastroCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(32, 36, 32, 32),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A0D11),
-        borderRadius: BorderRadius.circular(16),
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: _lime.withValues(alpha: 0.08),
+            blurRadius: 80,
+            offset: const Offset(0, -42),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.38),
+            blurRadius: 40,
+            offset: const Offset(0, 24),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            titulo,
-            style: const TextStyle(
-              color: Color(0xFFE89CA6),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+          _buildFieldBlock(
+            label: 'NOME COMPLETO',
+            child: _buildTextField(
+              controller: _nomeController,
+              hint: 'EX: ARTHUR SILVA',
+              icon: Icons.person_outline,
             ),
           ),
-          const Divider(color: Colors.white12),
-          const SizedBox(height: 10),
-          ...children,
+          const SizedBox(height: 21),
+          _buildFieldBlock(
+            label: 'E-MAIL',
+            child: _buildTextField(
+              controller: _emailController,
+              hint: 'COACH@H2OTRACK.COM',
+              icon: Icons.alternate_email,
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ),
+          const SizedBox(height: 21),
+          _buildFieldBlock(
+            label: 'NASCIMENTO',
+            child: _buildTextField(
+              controller: _nascimentoController,
+              hint: 'mm/dd/yyyy',
+              icon: Icons.calendar_today_outlined,
+              readOnly: true,
+              onTap: _selecionarData,
+            ),
+          ),
+          const SizedBox(height: 21),
+          _buildFieldBlock(
+            label: 'SENHA',
+            child: _buildTextField(
+              controller: _senhaController,
+              hint: '********',
+              icon: Icons.lock_outline,
+              obscureText: _obscureSenha,
+              suffix: IconButton(
+                onPressed: () => setState(() => _obscureSenha = !_obscureSenha),
+                icon: Icon(
+                  _obscureSenha ? Icons.visibility_off : Icons.visibility,
+                  color: _muted,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 21),
+          _buildFieldBlock(
+            label: 'CONFIRMACAO',
+            child: _buildTextField(
+              controller: _confirmacaoController,
+              hint: '********',
+              icon: Icons.verified_user_outlined,
+              obscureText: _obscureConfirmacao,
+              suffix: IconButton(
+                onPressed: () =>
+                    setState(() => _obscureConfirmacao = !_obscureConfirmacao),
+                icon: Icon(
+                  _obscureConfirmacao ? Icons.visibility_off : Icons.visibility,
+                  color: _muted,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 48),
+          _buildSalvarButton(),
         ],
       ),
     );
   }
 
-  Widget _buildInput(
-    String label,
-    String hint, {
-    bool isObscure = false,
+  Widget _buildFieldBlock({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: _cyan,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.9,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    bool readOnly = false,
+    bool obscureText = false,
+    VoidCallback? onTap,
     Widget? suffix,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            obscureText: isObscure,
-            obscuringCharacter: '•', // Ponto para ocultar a senha
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Colors.white38),
-              filled: true,
-              fillColor: const Color(0xFF5A3A3F),
-              suffixIcon: suffix,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      readOnly: readOnly,
+      obscureText: obscureText,
+      onTap: onTap,
+      style: const TextStyle(color: _text, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFF4E4E4E), fontSize: 13),
+        prefixIcon: Icon(icon, color: _muted, size: 17),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: Colors.black,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 16,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: BorderSide(color: _lime.withValues(alpha: 0.28)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: const BorderSide(color: _lime),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalvarButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: FilledButton(
+        onPressed: _salvarCadastro,
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          foregroundColor: Colors.black,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+          elevation: 10,
+          shadowColor: _lime.withValues(alpha: 0.55),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'SALVAR CADASTRO',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.8,
               ),
             ),
-          ),
-        ],
+            SizedBox(width: 10),
+            Icon(Icons.bolt, size: 17),
+          ],
+        ),
       ),
     );
   }

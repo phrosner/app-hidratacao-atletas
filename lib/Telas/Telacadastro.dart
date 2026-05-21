@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Botoes/BotaoClass.dart';
-import 'package:hidratrack/Componentes/ResponsiveContent.dart';
-import 'package:hidratrack/Telas/Telalogin.dart';
 
 class TelaCadastroAtleta extends StatefulWidget {
   const TelaCadastroAtleta({super.key});
@@ -11,130 +8,281 @@ class TelaCadastroAtleta extends StatefulWidget {
 }
 
 class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
+  static const _background = Color(0xFF101010);
+  static const _surface = Color(0xFF1B1B1B);
+  static const _lime = Color(0xFFB9FF00);
+  static const _cyan = Color(0xFF00E5FF);
+  static const _text = Color(0xFFF5F5F5);
+  static const _muted = Color(0xFF858585);
+
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _codigoController = TextEditingController();
+  final TextEditingController _dataController = TextEditingController();
+  final TextEditingController _pesoController = TextEditingController(
+    text: '75.0',
+  );
+  final TextEditingController _alturaController = TextEditingController(
+    text: '185',
+  );
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _codigoController.dispose();
+    _dataController.dispose();
+    _pesoController.dispose();
+    _alturaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selecionarData() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - 20, now.month, now.day),
+      firstDate: DateTime(1940),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: _lime,
+              onPrimary: Colors.black,
+              surface: _surface,
+              onSurface: _text,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked == null) return;
+    _dataController.text =
+        '${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}/${picked.year}';
+  }
+
+  void _salvarCadastro() {
+    Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0003),
-
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const Telalogin()),
-            );
-          },
-          icon: const Icon(Icons.arrow_back, color: Colors.pinkAccent),
-        ),
-        title: const Text(
-          "CADASTRO DE ATLETA",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+      backgroundColor: _background,
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 34),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildHeader(),
+                      const SizedBox(height: 54),
+                      _buildCadastroCard(),
+                      const SizedBox(height: 46),
+                      _buildSalvarButton(),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
 
-      body: SingleChildScrollView(
-        child: ResponsiveContent(
-          maxWidth: 900,
-          mobilePadding: const EdgeInsets.all(18),
-          child: Column(
+  Widget _buildHeader() {
+    return Row(
+      children: const [
+        Icon(Icons.water_drop, color: _lime, size: 21),
+        SizedBox(width: 6),
+        Text(
+          'H2OTRACK',
+          style: TextStyle(
+            color: _lime,
+            fontSize: 21,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCadastroCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 42, 22, 22),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: const Border(right: BorderSide(color: _lime, width: 2)),
+        boxShadow: [
+          BoxShadow(
+            color: _cyan.withValues(alpha: 0.45),
+            blurRadius: 0,
+            offset: const Offset(2, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildFieldBlock(
+            label: 'NOME COMPLETO',
+            child: _buildTextField(
+              controller: _nomeController,
+              hint: 'Ex: Lucas Silva',
+              icon: Icons.badge_outlined,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildFieldBlock(
+            label: 'CODIGO DE IDENTIFICACAO',
+            child: _buildTextField(
+              controller: _codigoController,
+              hint: 'HT-000000',
+              icon: Icons.fingerprint,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildFieldBlock(
+            label: 'DATA NASCIMENTO',
+            child: _buildTextField(
+              controller: _dataController,
+              hint: 'mm/dd/yyyy',
+              icon: Icons.calendar_today_outlined,
+              readOnly: true,
+              onTap: _selecionarData,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
             children: [
-              _buildSection("INFORMAÇÕES BÁSICAS", [
-                _buildInput("NOME COMPLETO", "Ex: João Silva"),
-                _buildInput("CÓDIGO DE IDENTIFICAÇÃO", "ID Atleta (Opcional)"),
-                _buildInput("DATA DE NASCIMENTO", "mm/dd/yyyy"),
-              ]),
-
-              const SizedBox(height: 20),
-
-              _buildSection("DADOS INICIAIS", [
-                Row(
-                  children: [
-                    Expanded(child: _buildInput("PESO BASE", "00.0 KG")),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildInput("ALTURA", "000 CM")),
-                  ],
+              Expanded(
+                child: _buildFieldBlock(
+                  label: 'PESO BASE (KG)',
+                  child: _buildTextField(
+                    controller: _pesoController,
+                    hint: '75.0',
+                    icon: Icons.monitor_weight_outlined,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    emphasis: true,
+                  ),
                 ),
-              ]),
-
-              const SizedBox(height: 30),
-
-              BotaoElevated(
-                texto: "SALVAR CADASTRO",
-                icone: Icons.check_circle_outline,
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/dashboard-atleta');
-                },
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _buildFieldBlock(
+                  label: 'ALTURA (CM)',
+                  child: _buildTextField(
+                    controller: _alturaController,
+                    hint: '185',
+                    icon: Icons.straighten,
+                    keyboardType: TextInputType.number,
+                    emphasis: true,
+                  ),
+                ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFieldBlock({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: _cyan,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.9,
+          ),
+        ),
+        const SizedBox(height: 9),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    bool readOnly = false,
+    bool emphasis = false,
+    VoidCallback? onTap,
+  }) {
+    return TextField(
+      controller: controller,
+      readOnly: readOnly,
+      onTap: onTap,
+      keyboardType: keyboardType,
+      style: TextStyle(
+        color: emphasis ? _muted : _text,
+        fontSize: emphasis ? 21 : 14,
+        fontWeight: emphasis ? FontWeight.w900 : FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(
+          color: emphasis ? _muted.withValues(alpha: 0.5) : _muted,
+          fontSize: emphasis ? 21 : 14,
+          fontWeight: emphasis ? FontWeight.w900 : FontWeight.w500,
+        ),
+        suffixIcon: Icon(icon, color: _muted, size: 18),
+        filled: true,
+        fillColor: Colors.black,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: BorderSide(color: _lime.withValues(alpha: 0.36)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: const BorderSide(color: _lime),
         ),
       ),
     );
   }
 
-  Widget _buildSection(String titulo, List<Widget> children) {
-    return Container(
+  Widget _buildSalvarButton() {
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A0D11),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            titulo,
-            style: const TextStyle(
-              color: Color(0xFFE89CA6),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+      height: 64,
+      child: FilledButton.icon(
+        onPressed: _salvarCadastro,
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          foregroundColor: Colors.black,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          shadowColor: _lime.withValues(alpha: 0.55),
+          elevation: 10,
+        ),
+        icon: const Icon(Icons.save, size: 20),
+        label: const Text(
+          'SALVAR CADASTRO',
+          style: TextStyle(
+            fontSize: 21,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.4,
           ),
-          const Divider(color: Colors.white12),
-          const SizedBox(height: 10),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInput(String label, String hint) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Colors.white38),
-              filled: true,
-              fillColor: const Color(0xFF5A3A3F),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
