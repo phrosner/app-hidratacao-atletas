@@ -11,4 +11,7 @@ abstract final class AppRotas {
 
   /// Registro pos-sessao do atleta.
   static const String posSessao = '/pos-sessao';
+
+  /// Historico de sessoes do atleta.
+  static const String historicoAtleta = '/historico-atleta';
 }

@@ -500,6 +500,10 @@ class TelaDashboardAtleta extends StatelessWidget {
                   Navigator.of(
                     context,
                   ).pushReplacementNamed('/dashboard-atleta');
+                } else if (i == 1) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.historicoAtleta);
                 }
               },
               child: SizedBox(
