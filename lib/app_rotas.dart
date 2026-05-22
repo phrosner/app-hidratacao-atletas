@@ -8,4 +8,7 @@ abstract final class AppRotas {
 
   /// Inicio de uma nova sessao de treino do atleta.
   static const String iniciarTreino = '/iniciar-treino';
+
+  /// Resultado da taxa media de sudorese do treino.
+  static const String taxaMedia = '/taxa-media';
 }

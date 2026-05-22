@@ -7,6 +7,8 @@ import 'package:hidratrack/Telas/TeladadosAtletas.dart';
 import 'package:hidratrack/Telas/Telagraficos.dart';
 import 'package:hidratrack/Telas/TeladashboardAtleta.dart';
 import 'package:hidratrack/Telas/TelainiciarTreino.dart';
+import 'package:hidratrack/Telas/TelaTaxaMedia.dart';
+import 'package:hidratrack/Telas/TelaSessãoAtiva.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,7 +26,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const TelaDashboardTreinador(),
+      home: const TelaTaxaMedia(),
       routes: {
         AppRotas.dashboardTreinador: (context) =>
             const TelaDashboardTreinador(),
@@ -36,6 +38,7 @@ class MyApp extends StatelessWidget {
         '/dados-atleta': (context) => const TeladadosAtletas(),
         '/graficos': (context) => const Telagraficos(),
         AppRotas.iniciarTreino: (context) => const TelaIniciarTreino(),
+        AppRotas.taxaMedia: (context) => const TelaTaxaMedia(),
         AppRotas.dashboardAtleta: (context) => TelaDashboardAtleta(
           data: AtletaDashboardData.fromHydrationMetrics(
             athleteName: 'Ricardo',
