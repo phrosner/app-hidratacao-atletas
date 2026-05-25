@@ -54,6 +54,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         status: 'FUTEBOL MASCULINO',
         numeroAtletas: 22,
         percentualHidratacao: 94,
+        codigoEquipe: 'HT-AAAA01',
       ),
       Equipe(
         id: 2,
@@ -61,6 +62,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         status: 'NATACAO',
         numeroAtletas: 8,
         percentualHidratacao: 81,
+        codigoEquipe: 'HT-AAAA02',
       ),
       Equipe(
         id: 3,
@@ -68,6 +70,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         status: 'FUTEBOL FEMININO',
         numeroAtletas: 16,
         percentualHidratacao: 76,
+        codigoEquipe: 'HT-AAAA03',
       ),
     ];
     _atletas = [
