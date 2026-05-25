@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Telas/TeladashboardTreinador.dart';
+import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosAtletas.dart';
@@ -26,8 +27,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const TelaDashboardTreinador(),
+      home: const Telalogin(),
       routes: {
+        '/login': (context) => const Telalogin(),
         AppRotas.dashboardTreinador: (context) =>
             const TelaDashboardTreinador(),
         '/equipes': (context) =>
