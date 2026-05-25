@@ -504,6 +504,12 @@ class TelaDashboardAtleta extends StatelessWidget {
                   Navigator.of(
                     context,
                   ).pushReplacementNamed(AppRotas.historicoAtleta);
+                } else if (i == 2) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.statsAtleta);
+                } else if (i == 3) {
+                  // Navegar para METAS quando a tela for criada
                 }
               },
               child: SizedBox(
