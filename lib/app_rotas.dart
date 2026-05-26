@@ -11,4 +11,9 @@ abstract final class AppRotas {
 
   /// Resultado da taxa media de sudorese do treino.
   static const String taxaMedia = '/taxa-media';
+  /// Registro pos-sessao do atleta.
+  static const String posSessao = '/pos-sessao';
+
+  /// Historico de sessoes do atleta.
+  static const String historicoAtleta = '/historico-atleta';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/EquipeService.dart';
 
 class TelaCadastroAtleta extends StatefulWidget {
   const TelaCadastroAtleta({super.key});
@@ -62,8 +63,50 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
         '${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}/${picked.year}';
   }
 
-  void _salvarCadastro() {
-    Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+  Future<void> _salvarCadastro() async {
+    final nome = _nomeController.text.trim();
+    final codigoEquipe = _codigoController.text.trim().toUpperCase();
+    final dataNascimento = _dataController.text.trim();
+
+    if (nome.isEmpty) {
+      _mostrarMensagem('Informe o nome do atleta.');
+      return;
+    }
+
+    if (codigoEquipe.isEmpty) {
+      _mostrarMensagem('Informe o código da equipe.');
+      return;
+    }
+
+    if (dataNascimento.isEmpty) {
+      _mostrarMensagem('Informe a data de nascimento.');
+      return;
+    }
+
+    try {
+      final atletaId = await EquipeService.adicionarAtletaPorCodigoEquipe(
+        codigoEquipe: codigoEquipe,
+        nomeAtleta: nome,
+      );
+
+      if (!mounted) return;
+      _mostrarMensagem(
+        'Cadastro concluído! Atleta incluído na equipe $codigoEquipe (ID $atletaId).',
+      );
+      Navigator.pushReplacementNamed(context, '/dashboard-atleta');
+    } catch (e) {
+      _mostrarMensagem('Erro no cadastro: ${e.toString().replaceAll("Exception: ", "")}');
+    }
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+    );
   }
 
   @override

@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Telas/TeladashboardTreinador.dart';
+import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosAtletas.dart';
 import 'package:hidratrack/Telas/Telagraficos.dart';
 import 'package:hidratrack/Telas/TeladashboardAtleta.dart';
 import 'package:hidratrack/Telas/TelainiciarTreino.dart';
+<<<<<<< HEAD
 import 'package:hidratrack/Telas/TelaTaxaMedia.dart';
 import 'package:hidratrack/Telas/TelaSessãoAtiva.dart';
+=======
+import 'package:hidratrack/Telas/Pos_sessao.dart';
+import 'package:hidratrack/Telas/Telahistorico.dart';
+import 'package:hidratrack/Telas/TelastatsAtleta.dart';
+>>>>>>> 1a4012a5f06ba933925f63d0dff0ce46d853eb46
 
 void main() {
   runApp(const MyApp());
@@ -26,8 +33,13 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+<<<<<<< HEAD
       home: const TelaTaxaMedia(),
+=======
+      home: const Telalogin(),
+>>>>>>> 1a4012a5f06ba933925f63d0dff0ce46d853eb46
       routes: {
+        '/login': (context) => const Telalogin(),
         AppRotas.dashboardTreinador: (context) =>
             const TelaDashboardTreinador(),
         '/equipes': (context) =>
@@ -38,7 +50,13 @@ class MyApp extends StatelessWidget {
         '/dados-atleta': (context) => const TeladadosAtletas(),
         '/graficos': (context) => const Telagraficos(),
         AppRotas.iniciarTreino: (context) => const TelaIniciarTreino(),
+<<<<<<< HEAD
         AppRotas.taxaMedia: (context) => const TelaTaxaMedia(),
+=======
+        AppRotas.posSessao: (context) => const PosSessao(),
+        AppRotas.historicoAtleta: (context) => const TelaHistorico(),
+        AppRotas.statsAtleta: (context) => const TelastatsAtleta(),
+>>>>>>> 1a4012a5f06ba933925f63d0dff0ce46d853eb46
         AppRotas.dashboardAtleta: (context) => TelaDashboardAtleta(
           data: AtletaDashboardData.fromHydrationMetrics(
             athleteName: 'Ricardo',

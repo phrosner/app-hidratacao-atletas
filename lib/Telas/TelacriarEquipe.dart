@@ -11,9 +11,7 @@ class TelacriarEquipe extends StatefulWidget {
 class _TelacriarEquipeState extends State<TelacriarEquipe> {
   static const _background = Color(0xFF101010);
   static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
   static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
   static const _text = Color(0xFFF5F5F5);
   static const _muted = Color(0xFF858585);
 
@@ -21,9 +19,7 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
   bool _carregando = false;
 
   final TextEditingController _nomeController = TextEditingController();
-  final TextEditingController _modalidadeController = TextEditingController();
   final TextEditingController _descricaoController = TextEditingController();
-  final TextEditingController _searchController = TextEditingController();
 
   String? _categoriaSelect;
   String? _modalidadeSelect;
@@ -45,102 +41,29 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
     'Ciclismo',
   ];
 
-  final List<Map<String, dynamic>> todosAtletas = [
-    {
-      'id': 1,
-      'nome': 'Marcus V. Silva',
-      'posicao': 'Iron Man',
-      'idAtleta': 1024,
-      'selecionado': false,
-    },
-    {
-      'id': 2,
-      'nome': 'Elena Rodrigues',
-      'posicao': 'Sprint',
-      'idAtleta': 823,
-      'selecionado': true,
-    },
-    {
-      'id': 3,
-      'nome': 'Ricardo Neves',
-      'posicao': 'Meio Fundo',
-      'idAtleta': 581,
-      'selecionado': false,
-    },
-    {
-      'id': 4,
-      'nome': 'Gabriel Santos',
-      'posicao': 'Endurance',
-      'idAtleta': 489,
-      'selecionado': false,
-    },
-    {
-      'id': 5,
-      'nome': 'Lucas Ferreira',
-      'posicao': 'Velocidade',
-      'idAtleta': 762,
-      'selecionado': false,
-    },
-  ];
-
-  late List<Map<String, dynamic>> atletasFiltrados;
-
-  int get _selecionados =>
-      todosAtletas.where((atleta) => atleta['selecionado'] == true).length;
-
   @override
   void initState() {
     super.initState();
-    atletasFiltrados = List.of(todosAtletas);
     _categoriaSelect = categorias.first;
     _modalidadeSelect = modalidades.first;
-    _modalidadeController.text = _modalidadeSelect ?? '';
-  }
-
-  void _filtrarAtletas(String query) {
-    setState(() {
-      atletasFiltrados = query.isEmpty
-          ? List.of(todosAtletas)
-          : todosAtletas
-                .where(
-                  (atleta) =>
-                      atleta['nome'].toLowerCase().contains(
-                        query.toLowerCase(),
-                      ) ||
-                      atleta['idAtleta'].toString().contains(query),
-                )
-                .toList();
-    });
   }
 
   Future<void> _salvarEquipe() async {
     try {
-      final atletasSelecionados = todosAtletas
-          .where((a) => a['selecionado'])
-          .map<int>((a) => a['idAtleta'] as int)
-          .toList();
-
       setState(() => _carregando = true);
 
-      final sucesso = await EquipeService.criarEquipe(
+      final equipe = await EquipeService.criarEquipe(
         nome: _nomeController.text,
         categoria: _categoriaSelect ?? categorias.first,
-        modalidade: _modalidadeController.text,
+        modalidade: _modalidadeSelect ?? modalidades.first,
         descricao: _descricaoController.text,
-        atletasIds: atletasSelecionados,
+        atletasIds: [],
       );
 
-      if (sucesso && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Equipe criada com sucesso'),
-            backgroundColor: _lime,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        Future.delayed(const Duration(milliseconds: 900), () {
-          if (mounted) Navigator.pop(context);
-        });
+      if (mounted) {
+        await _mostrarCodigoEquipeDialog(equipe.codigoEquipe);
+        if (!mounted) return;
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -181,9 +104,7 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
   @override
   void dispose() {
     _nomeController.dispose();
-    _modalidadeController.dispose();
     _descricaoController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -208,10 +129,6 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
                       _buildHeader(),
                       const SizedBox(height: 24),
                       _buildConfigCard(),
-                      const SizedBox(height: 16),
-                      _buildRecruitmentCard(),
-                      const SizedBox(height: 14),
-                      _buildSelectedSummary(),
                       const SizedBox(height: 18),
                       _buildSalvarButton(),
                       const SizedBox(height: 34),
@@ -316,100 +233,117 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
             value: _modalidadeSelect,
             items: modalidades,
             onChanged: (value) {
-              setState(() {
-                _modalidadeSelect = value;
-                _modalidadeController.text = value ?? '';
-              });
+              setState(() => _modalidadeSelect = value);
             },
           ),
           const SizedBox(height: 16),
-          _buildLabel('DESCRICAO TATICA'),
+          _buildLabel('DESCRIÇÃO TÁTICA'),
           const SizedBox(height: 8),
           _buildTextAreaField(
             _descricaoController,
             'Defina os objetivos e o foco da equipe...',
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecruitmentCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _cyan.withValues(alpha: 0.22)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel('RECRUTAMENTO DE ATLETAS'),
-          const SizedBox(height: 12),
-          _buildSearchBar(),
           const SizedBox(height: 14),
-          for (final atleta in atletasFiltrados) _buildAtletaItem(atleta),
+          const Text(
+            'Um código de equipe será gerado automaticamente após salvar a equipe. O atleta usará esse código no cadastro para entrar diretamente.',
+            style: TextStyle(color: _muted, fontSize: 11, height: 1.4),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSelectedSummary() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: const BoxDecoration(
-        color: Color(0xFF171717),
-        border: Border(
-          left: BorderSide(color: _lime, width: 3),
-          right: BorderSide(color: _lime, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'MEMBROS SELECIONADOS',
-                  style: TextStyle(
-                    color: _lime,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _selecionados.toString().padLeft(2, '0'),
-                      style: const TextStyle(
-                        color: _text,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '/ ${todosAtletas.length}',
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+  Widget _buildSalvarButton() {
+    return Center(
+      child: SizedBox(
+        width: 190,
+        height: 52,
+        child: FilledButton(
+          onPressed: _carregando ? null : _salvarEquipe,
+          style: FilledButton.styleFrom(
+            backgroundColor: _lime,
+            disabledBackgroundColor: _muted,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
-          const Icon(Icons.groups_2_outlined, color: _lime, size: 22),
-        ],
+          child: _carregando
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  ),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'SALVAR EQUIPE',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.bolt, color: Colors.black, size: 16),
+                  ],
+                ),
+        ),
       ),
+    );
+  }
+
+  Future<void> _mostrarCodigoEquipeDialog(String codigoEquipe) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: _surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          title: const Text('Equipe criada'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Código de acesso da equipe:'),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _lime.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  codigoEquipe,
+                  style: const TextStyle(
+                    color: _lime,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Peça para o atleta usar este código no cadastro para entrar na equipe.',
+                style: TextStyle(color: _muted, fontSize: 12, height: 1.4),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('FECHAR'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -481,166 +415,6 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
           )
           .toList(),
       onChanged: onChanged,
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return SizedBox(
-      height: 42,
-      child: TextField(
-        controller: _searchController,
-        onChanged: _filtrarAtletas,
-        style: const TextStyle(color: _text, fontSize: 12),
-        decoration: InputDecoration(
-          hintText: 'Buscar por ID ou Nome...',
-          hintStyle: const TextStyle(color: _muted, fontSize: 11),
-          prefixIcon: const Icon(Icons.search, color: _text, size: 18),
-          filled: true,
-          fillColor: Colors.black,
-          contentPadding: EdgeInsets.zero,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(22),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(22),
-            borderSide: const BorderSide(color: _lime),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAtletaItem(Map<String, dynamic> atleta) {
-    final selected = atleta['selecionado'] == true;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: selected ? _lime.withValues(alpha: 0.08) : _surfaceLight,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(
-          color: selected ? _lime.withValues(alpha: 0.36) : Colors.transparent,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 36,
-            width: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFF303030),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              atleta['nome'].toString().characters.first,
-              style: const TextStyle(
-                color: _text,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  atleta['nome'],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _text,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${atleta['posicao']} - #${atleta['idAtleta']}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _cyan,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              setState(() {
-                atleta['selecionado'] = !selected;
-              });
-            },
-            child: Container(
-              height: 28,
-              width: 28,
-              decoration: const BoxDecoration(
-                color: _lime,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                selected ? Icons.check : Icons.add,
-                color: Colors.black,
-                size: 18,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSalvarButton() {
-    return Center(
-      child: SizedBox(
-        width: 190,
-        height: 52,
-        child: FilledButton(
-          onPressed: _carregando ? null : _salvarEquipe,
-          style: FilledButton.styleFrom(
-            backgroundColor: _lime,
-            disabledBackgroundColor: _muted,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          child: _carregando
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
-              : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'SALVAR EQUIPE',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.bolt, color: Colors.black, size: 16),
-                  ],
-                ),
-        ),
-      ),
     );
   }
 

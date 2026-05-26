@@ -1,8 +1,24 @@
+import 'dart:math';
+
 import 'package:hidratrack/Modelos/EquipesModels.dart';
 
 class EquipeService {
+  static final List<Equipe> _equipes = [];
+  static int _nextId = 1;
+  static int _nextAtletaId = 1001;
+
+  static String gerarCodigoEquipe() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random.secure();
+    final code = List.generate(
+      6,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
+    return 'HT-$code';
+  }
+
   // Simulando uma API - substituir com chamadas HTTP reais
-  static Future<bool> criarEquipe({
+  static Future<Equipe> criarEquipe({
     required String nome,
     required String categoria,
     required String modalidade,
@@ -18,28 +34,21 @@ class EquipeService {
         throw Exception('Campos obrigatórios não preenchidos');
       }
 
-      // Aqui você faria uma chamada POST para sua API
-      // Exemplo:
-      // final response = await http.post(
-      //   Uri.parse('$baseUrl/equipes'),
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: jsonEncode({
-      //     'nome': nome,
-      //     'categoria': categoria,
-      //     'modalidade': modalidade,
-      //     'descricao': descricao,
-      //     'atletasIds': atletasIds,
-      //   }),
-      // );
-      //
-      // if (response.statusCode == 201) {
-      //   return true;
-      // } else {
-      //   throw Exception('Erro ao criar equipe');
-      // }
+      final equipe = Equipe(
+        id: _nextId++,
+        nome: nome,
+        status: categoria.isNotEmpty ? categoria : 'ATIVA',
+        numeroAtletas: atletasIds.length,
+        percentualHidratacao: 0.0,
+        codigoEquipe: gerarCodigoEquipe(),
+        categoria: categoria,
+        modalidade: modalidade,
+        descricao: descricao,
+        atletasIds: List<int>.from(atletasIds),
+      );
 
-      // Por enquanto retorna true (sucesso simulado)
-      return true;
+      _equipes.add(equipe);
+      return equipe;
     } catch (e) {
       throw Exception('Erro ao criar equipe: $e');
     }
@@ -48,22 +57,7 @@ class EquipeService {
   static Future<List<Equipe>> listarEquipes() async {
     try {
       await Future.delayed(const Duration(seconds: 1));
-
-      // Aqui você faria uma chamada GET para sua API
-      // Exemplo:
-      // final response = await http.get(
-      //   Uri.parse('$baseUrl/equipes'),
-      //   headers: {'Content-Type': 'application/json'},
-      // );
-      //
-      // if (response.statusCode == 200) {
-      //   List<dynamic> data = jsonDecode(response.body);
-      //   return data.map((item) => Equipe.fromJson(item)).toList();
-      // } else {
-      //   throw Exception('Erro ao listar equipes');
-      // }
-
-      return [];
+      return List<Equipe>.unmodifiable(_equipes);
     } catch (e) {
       throw Exception('Erro ao listar equipes: $e');
     }
@@ -71,22 +65,65 @@ class EquipeService {
 
   static Future<Equipe?> obterEquipe(int id) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Chamada GET para obter uma equipe específica
-      // Exemplo:
-      // final response = await http.get(
-      //   Uri.parse('$baseUrl/equipes/$id'),
-      //   headers: {'Content-Type': 'application/json'},
-      // );
-      //
-      // if (response.statusCode == 200) {
-      //   return Equipe.fromJson(jsonDecode(response.body));
-      // }
-
-      return null;
+      await Future.delayed(const Duration(milliseconds: 500));
+      return _equipes.cast<Equipe?>().firstWhere(
+        (equipe) => equipe?.id == id,
+        orElse: () => null,
+      );
     } catch (e) {
       throw Exception('Erro ao obter equipe: $e');
+    }
+  }
+
+  static Future<Equipe?> obterEquipePorCodigo(String codigoEquipe) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      final normalized = codigoEquipe.trim().toUpperCase();
+      final matches = _equipes
+          .where((equipe) => equipe.codigoEquipe.toUpperCase() == normalized)
+          .toList();
+      return matches.isEmpty ? null : matches.first;
+    } catch (e) {
+      throw Exception('Erro ao obter equipe por código: $e');
+    }
+  }
+
+  static Future<int> adicionarAtletaPorCodigoEquipe({
+    required String codigoEquipe,
+    required String nomeAtleta,
+  }) async {
+    final atletaNome = nomeAtleta;
+    try {
+      final equipe = await obterEquipePorCodigo(codigoEquipe);
+      if (equipe == null) {
+        throw Exception('Equipe não encontrada para o código informado.');
+      }
+
+      final atletaId = _nextAtletaId++;
+      final atletasIds = List<int>.from(equipe.atletasIds ?? []);
+
+      if (atletasIds.contains(atletaId)) {
+        return atletaId;
+      }
+
+      atletasIds.add(atletaId);
+
+      final sucesso = await atualizarEquipe(
+        id: equipe.id,
+        nome: equipe.nome,
+        categoria: equipe.categoria ?? '',
+        modalidade: equipe.modalidade ?? '',
+        descricao: equipe.descricao ?? '',
+        atletasIds: atletasIds,
+      );
+
+      if (!sucesso) {
+        throw Exception('Falha ao anexar atleta $atletaNome à equipe.');
+      }
+
+      return atletaId;
+    } catch (e) {
+      throw Exception('Erro ao adicionar atleta $atletaNome na equipe: $e');
     }
   }
 
@@ -101,24 +138,22 @@ class EquipeService {
     try {
       await Future.delayed(const Duration(seconds: 2));
 
-      // Chamada PUT para atualizar uma equipe no backend Java
-      // Exemplo:
-      // final response = await http.put(
-      //   Uri.parse('$baseUrl/equipes/$id'),
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': 'Bearer $token', // Se necessário
-      //   },
-      //   body: jsonEncode({
-      //     'nome': nome,
-      //     'categoria': categoria,
-      //     'modalidade': modalidade,
-      //     'descricao': descricao,
-      //     'atletasIds': atletasIds,
-      //   }),
-      // );
-      //
-      // return response.statusCode == 200 || response.statusCode == 204;
+      final index = _equipes.indexWhere((equipe) => equipe.id == id);
+      if (index < 0) return false;
+
+      final existing = _equipes[index];
+      _equipes[index] = Equipe(
+        id: existing.id,
+        nome: nome,
+        status: categoria.isNotEmpty ? categoria : existing.status,
+        numeroAtletas: atletasIds.length,
+        percentualHidratacao: existing.percentualHidratacao,
+        codigoEquipe: existing.codigoEquipe,
+        categoria: categoria,
+        modalidade: modalidade,
+        descricao: descricao,
+        atletasIds: List<int>.from(atletasIds),
+      );
 
       return true;
     } catch (e) {
@@ -129,16 +164,7 @@ class EquipeService {
   static Future<bool> deletarEquipe(int id) async {
     try {
       await Future.delayed(const Duration(seconds: 1));
-
-      // Chamada DELETE para deletar uma equipe
-      // Exemplo:
-      // final response = await http.delete(
-      //   Uri.parse('$baseUrl/equipes/$id'),
-      //   headers: {'Content-Type': 'application/json'},
-      // );
-      //
-      // return response.statusCode == 200;
-
+      _equipes.removeWhere((equipe) => equipe.id == id);
       return true;
     } catch (e) {
       throw Exception('Erro ao deletar equipe: $e');
