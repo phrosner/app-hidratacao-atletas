@@ -289,7 +289,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.8,
-          ),
+          ), 
         ),
         const Spacer(),
         Text(
