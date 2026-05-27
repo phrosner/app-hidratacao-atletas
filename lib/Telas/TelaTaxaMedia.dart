@@ -7,13 +7,13 @@ import 'package:hidratrack/app_rotas.dart';
 class TelaTaxaMedia extends StatelessWidget {
   const TelaTaxaMedia({super.key});
 
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF171717);
-  static const _surfaceLight = Color(0xFF222222);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   static const double _sweatRate = 1.85;
   static const double _waterLossLiters = 2.42;
@@ -29,17 +29,6 @@ class TelaTaxaMedia extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
       ),
     );
-  }
-
-  void _navigateBottom(BuildContext context, int index) {
-    if (index == 0) {
-      Navigator.of(context).pushReplacementNamed(AppRotas.iniciarTreino);
-      return;
-    }
-
-    if (index == 2) return;
-
-    _showAction(context, 'Area em desenvolvimento');
   }
 
   @override
@@ -84,26 +73,9 @@ class TelaTaxaMedia extends StatelessWidget {
   }
 
   Widget _buildTopBar() {
-    return Row(
-      children: [
-        const Icon(Icons.menu, color: _muted, size: 18),
-        const SizedBox(width: 8),
-        const Text(
-          'H2OTRACK',
-          style: TextStyle(
-            color: _text,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1,
-          ),
-        ),
-        const Spacer(),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none, color: _text, size: 21),
-        ),
-      ],
+    return const Text(
+      'H2OTRACK',
+      style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w500),
     );
   }
 
@@ -164,7 +136,7 @@ class TelaTaxaMedia extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildPill('INTENSIDADE ALTA', _lime, Colors.black),
+              _buildPill('INTENSIDADE ALTA', _lime, Colors.white),
               const SizedBox(width: 10),
               _buildPill('21 C / 65% UR', _surfaceLight, _text),
             ],
@@ -297,13 +269,13 @@ class TelaTaxaMedia extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.water_drop_outlined, color: Colors.black, size: 20),
+              Icon(Icons.water_drop_outlined, color: Colors.white, size: 20),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'PLANO DE REPOSICAO',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.6,
@@ -316,7 +288,7 @@ class TelaTaxaMedia extends StatelessWidget {
           const Text(
             'RECOMENDACAO HORARIA',
             style: TextStyle(
-              color: Colors.black54,
+              color: Colors.white54,
               fontSize: 8,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.2,
@@ -329,7 +301,7 @@ class TelaTaxaMedia extends StatelessWidget {
               Text(
                 '${_recommendedMlHour}ml',
                 style: const TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -341,7 +313,7 @@ class TelaTaxaMedia extends StatelessWidget {
                 child: Text(
                   '/h',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -352,9 +324,9 @@ class TelaTaxaMedia extends StatelessWidget {
           const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.white.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(7),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.09)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
             ),
             child: Column(
               children: [
@@ -388,19 +360,19 @@ class TelaTaxaMedia extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.black, size: 17),
+          Icon(icon, color: Colors.white, size: 17),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 height: 1.25,
@@ -420,7 +392,7 @@ class TelaTaxaMedia extends StatelessWidget {
         onPressed: () => _showAction(context, 'Resultado salvo com sucesso'),
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 12,
           shadowColor: _lime.withValues(alpha: 0.34),
@@ -463,17 +435,19 @@ class TelaTaxaMedia extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     const items = [
-      (Icons.timer_outlined, 'SESSAO'),
+      (Icons.water_drop, 'SESSAO'),
       (Icons.history_rounded, 'HISTORICO'),
-      (Icons.insert_chart_outlined, 'STATS'),
-      (Icons.track_changes, 'METAS'),
+      (Icons.insert_chart_outlined, 'STATUS'),
+      (Icons.person, 'PERFIL'),
     ];
 
     return Container(
-      height: 72,
+      height: 72 + bottomInset,
+      padding: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: const Color(0xFFFFFFFF),
         border: Border(
           top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -483,7 +457,21 @@ class TelaTaxaMedia extends StatelessWidget {
         children: [
           for (var i = 0; i < items.length; i++)
             InkWell(
-              onTap: () => _navigateBottom(context, i),
+              onTap: () {
+                if (i == 0) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.dashboardAtleta);
+                } else if (i == 1) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.historicoAtleta);
+                } else if (i == 3) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.perfilAtleta);
+                }
+              },
               child: SizedBox(
                 width: 74,
                 child: Column(
@@ -528,9 +516,9 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const lime = Color(0xFFB9FF00);
-    const surface = Color(0xFF171717);
-    const muted = Color(0xFF858585);
+    const lime = Color(0xFFB32025);
+    const surface = Color(0xFFF7F7F7);
+    const muted = Color(0xFF6B6B6B);
 
     return Container(
       height: 86,
@@ -597,7 +585,7 @@ class _PlanHeaderText extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        color: Colors.black.withValues(alpha: 0.56),
+        color: Colors.white.withValues(alpha: 0.56),
         fontSize: 8,
         fontWeight: FontWeight.w900,
         letterSpacing: 1,
@@ -625,7 +613,7 @@ class _PlanRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: showDivider
             ? Border(
-                top: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+                top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               )
             : null,
       ),
@@ -653,7 +641,7 @@ class _PlanCell extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: const TextStyle(
-        color: Colors.black,
+        color: Colors.white,
         fontSize: 10,
         fontWeight: FontWeight.w800,
       ),
@@ -671,7 +659,7 @@ class _AxisLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: Color(0xFF858585),
+        color: Color(0xFF6B6B6B),
         fontSize: 8,
         fontWeight: FontWeight.w900,
         letterSpacing: 0.8,

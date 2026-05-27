@@ -12,12 +12,12 @@ class TelaSessaoAtiva extends StatefulWidget {
 }
 
 class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
-  static const _background = Color(0xFF101010);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   final TextEditingController _manualController = TextEditingController();
   final List<_HydrationLog> _timeline = [];
@@ -26,7 +26,6 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
   late Timer _timer;
   late Duration _elapsed;
   int _totalMl = 0;
-  int _currentNavIndex = 0;
 
   @override
   void initState() {
@@ -99,24 +98,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-    Navigator.of(context).pushReplacementNamed(AppRotas.dashboardAtleta);
-  }
-
-  void _navigateBottom(int index) {
-    setState(() => _currentNavIndex = index);
-    if (index == 0) return;
-
-    if (index == 2) {
-      Navigator.of(context).pushReplacementNamed(AppRotas.taxaMedia);
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Area em desenvolvimento'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    Navigator.of(context).pushReplacementNamed(AppRotas.posSessao);
   }
 
   String _formatElapsed(Duration duration) {
@@ -138,7 +120,6 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _background,
-      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -289,7 +270,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.8,
-          ), 
+          ),
         ),
         const Spacer(),
         Text(
@@ -382,7 +363,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
                     hintText: 'Volume em ml',
                     hintStyle: const TextStyle(color: _muted, fontSize: 12),
                     filled: true,
-                    fillColor: Colors.black,
+                    fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(9),
@@ -407,7 +388,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
                 onPressed: _addManualHydration,
                 style: FilledButton.styleFrom(
                   backgroundColor: _lime,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   padding: EdgeInsets.zero,
                   minimumSize: const Size(48, 48),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -425,23 +406,6 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
   }
 
   Widget _buildTimeline() {
-    final logs = _timeline.isEmpty
-        ? [
-            _HydrationLog(
-              label: 'Squeeze',
-              amountMl: 100,
-              icon: Icons.sports_gymnastics,
-              elapsed: const Duration(minutes: 8, seconds: 12),
-            ),
-            _HydrationLog(
-              label: 'Copo',
-              amountMl: 300,
-              icon: Icons.local_drink_outlined,
-              elapsed: const Duration(minutes: 12, seconds: 38),
-            ),
-          ]
-        : _timeline;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -455,13 +419,13 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
           ),
         ),
         const SizedBox(height: 10),
-        for (var i = 0; i < logs.length; i++) ...[
+        for (var i = 0; i < _timeline.length; i++) ...[
           _TimelineItem(
-            log: logs[i],
-            time: _formatLogTime(logs[i].elapsed),
+            log: _timeline[i],
+            time: _formatLogTime(_timeline[i].elapsed),
             isHighlighted: i == 0,
           ),
-          if (i != logs.length - 1) const SizedBox(height: 10),
+          if (i != _timeline.length - 1) const SizedBox(height: 10),
         ],
       ],
     );
@@ -475,7 +439,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
         onPressed: _endSession,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(13),
           ),
@@ -491,60 +455,6 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
             letterSpacing: 2.2,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    const items = [
-      (Icons.water_drop, 'SESSAO'),
-      (Icons.history_rounded, 'HISTORICO'),
-      (Icons.insert_chart_outlined, 'STATS'),
-      (Icons.track_changes, 'METAS'),
-    ];
-
-    return Container(
-      height: 72,
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < items.length; i++)
-            InkWell(
-              onTap: () => _navigateBottom(i),
-              child: SizedBox(
-                width: 74,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      items[i].$1,
-                      color: _currentNavIndex == i ? _lime : _muted,
-                      size: 23,
-                    ),
-                    const SizedBox(height: 5),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        items[i].$2,
-                        style: TextStyle(
-                          color: _currentNavIndex == i ? _lime : _muted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.9,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -565,12 +475,12 @@ class _QuickHydrationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const lime = Color(0xFFB9FF00);
-    const text = Color(0xFFF5F5F5);
-    const muted = Color(0xFF858585);
+    const lime = Color(0xFFB32025);
+    const text = Color(0xFF222222);
+    const muted = Color(0xFF6B6B6B);
 
     return Material(
-      color: const Color(0xFF1B1B1B),
+      color: const Color(0xFFF7F7F7),
       borderRadius: BorderRadius.circular(9),
       child: InkWell(
         onTap: onTap,
@@ -630,11 +540,11 @@ class _TimelineItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF1B1B1B);
-    const surfaceLight = Color(0xFF242424);
-    const lime = Color(0xFFB9FF00);
-    const text = Color(0xFFF5F5F5);
-    const muted = Color(0xFF858585);
+    const surface = Color(0xFFF7F7F7);
+    const surfaceLight = Color(0xFFEDEDED);
+    const lime = Color(0xFFB32025);
+    const text = Color(0xFF222222);
+    const muted = Color(0xFF6B6B6B);
 
     return Container(
       height: 66,

@@ -24,14 +24,14 @@ class TelaDashboardTreinador extends StatefulWidget {
 }
 
 class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
-  static const _danger = Color(0xFFFF455D);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
+  static const _danger = Color(0xFFB32025);
 
   late int _selectedTab;
   late int _currentNavIndex;
@@ -139,15 +139,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         setState(() => _selectedTab = 0);
         break;
       case 1:
-        setState(() => _selectedTab = 0);
-        break;
-      case 2:
         Navigator.of(context).pushNamed('/graficos');
-        break;
-      case 3:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil do treinador em breve')),
-        );
         break;
     }
   }
@@ -210,7 +202,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                     },
                     child: const Text(
                       'COPIAR',
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -256,11 +248,11 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
       floatingActionButton: FloatingActionButton(
         onPressed: _acaoPrincipal,
         backgroundColor: _lime,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 30),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -532,64 +524,82 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        height: 166,
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.fromLTRB(18, 16, 12, 14),
         decoration: BoxDecoration(
           color: _surface,
           borderRadius: BorderRadius.circular(7),
           border: Border(left: BorderSide(color: accent, width: 3)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 19,
-              backgroundColor: _surfaceLight,
-              child: Text(
-                atleta.nome.characters.first,
-                style: const TextStyle(
-                  color: _text,
-                  fontWeight: FontWeight.w700,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        atleta.nome,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _text,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        atleta.status,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _text,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const Icon(Icons.more_vert, color: _text, size: 19),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    atleta.nome,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            const Spacer(),
+            Row(
+              children: [
+                _buildSmallStat('CATEGORIA', atleta.categoria),
+                const SizedBox(width: 54),
+                _buildSmallStat(
+                  'HIDRATACAO',
+                  '${atleta.hidratacao.toStringAsFixed(0)}%',
+                  color: accent,
+                ),
+              ],
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 13,
+                  backgroundColor: _surfaceLight,
+                  child: Text(
+                    atleta.nome.characters.first,
                     style: const TextStyle(
                       color: _text,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '${atleta.categoria} / ${atleta.status}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _muted,
                       fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${atleta.hidratacao}%',
-              style: TextStyle(
-                color: accent,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
+                ),
+                const Spacer(),
+                Icon(Icons.chevron_right, color: accent, size: 24),
+              ],
             ),
           ],
         ),
@@ -754,18 +764,18 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     const items = [
       (Icons.home_rounded, 'HOME'),
-      (Icons.groups_2_outlined, 'EQUIPES'),
-      (Icons.history_rounded, 'HISTORICO'),
-      (Icons.person_outline_rounded, 'PERFIL'),
+      (Icons.analytics_outlined, 'ANALISE'),
     ];
 
     return Container(
-      height: 64,
+      height: 72 + bottomInset,
+      padding: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: const Color(0xFFFFFFFF),
         border: Border(
           top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -777,7 +787,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
             InkWell(
               onTap: () => _selecionarNav(i),
               child: SizedBox(
-                width: 74,
+                width: 104,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

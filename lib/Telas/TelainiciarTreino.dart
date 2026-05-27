@@ -9,12 +9,12 @@ class TelaIniciarTreino extends StatefulWidget {
 }
 
 class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   final TextEditingController _pesoController = TextEditingController(
     text: '74.5',
@@ -27,9 +27,7 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
   }
 
   void _iniciarTreino() {
-    final pesoInicial =
-        double.tryParse(_pesoController.text.replaceAll(',', '.')) ?? 0;
-    Navigator.of(context).pushNamed(AppRotas.posSessao, arguments: pesoInicial);
+    Navigator.of(context).pushReplacementNamed(AppRotas.sessaoAtiva);
   }
 
   @override
@@ -219,44 +217,49 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 18, 20, 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF19200F),
+        color: _surface,
         borderRadius: BorderRadius.circular(10),
-        border: const Border(left: BorderSide(color: _lime, width: 3)),
-        boxShadow: [
-          BoxShadow(
-            color: _lime.withValues(alpha: 0.06),
-            blurRadius: 50,
-            offset: const Offset(0, 18),
-          ),
-        ],
+        border: Border.all(color: _surfaceLight),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Icon(Icons.info, color: _lime, size: 25),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'INSTRUCAO DE PESAGEM',
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 3,
-                  ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: _lime, width: 3)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Icon(Icons.info_outline, color: _lime, size: 25),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'INSTRUCAO DE PESAGEM',
+                      style: TextStyle(
+                        color: _lime,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.4,
+                      ),
+                    ),
+                    SizedBox(height: 9),
+                    Text(
+                      'Para uma medicao precisa, pese-se utilizando apenas roupas intimas e sem nenhum tipo de calcado.',
+                      style: TextStyle(
+                        color: _text,
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 10),
-                Text(
-                  'Para uma medicao precisa, pese-se utilizando apenas roupas intimas e sem nenhum tipo de calcado.',
-                  style: TextStyle(color: _text, fontSize: 13, height: 1.55),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -269,7 +272,7 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
         onPressed: _iniciarTreino,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
