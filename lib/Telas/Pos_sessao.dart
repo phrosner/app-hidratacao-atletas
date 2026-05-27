@@ -9,13 +9,13 @@ class PosSessao extends StatefulWidget {
 }
 
 class _PosSessaoState extends State<PosSessao> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   final TextEditingController _pesoFinalController = TextEditingController(
     text: '80.5',
@@ -37,12 +37,12 @@ class _PosSessaoState extends State<PosSessao> {
   ];
 
   final List<Color> _urinaCores = const [
-    Color(0xFFF8F8E6),
-    Color(0xFFFFF9B8),
-    Color(0xFFF5F46C),
-    Color(0xFFFFD84D),
-    Color(0xFFFFA82E),
-    Color(0xFF3B3B31),
+    Color(0xFFF9FFFF),
+    Color(0xFFFFF4A8),
+    Color(0xFFFFDD3D),
+    Color(0xFFE8A51F),
+    Color(0xFFD86B1D),
+    Color(0xFF6B3A1E),
   ];
 
   @override
@@ -117,7 +117,6 @@ class _PosSessaoState extends State<PosSessao> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _background,
-      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -251,7 +250,7 @@ class _PosSessaoState extends State<PosSessao> {
                   ),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.black,
+                    fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 9,
@@ -353,7 +352,7 @@ class _PosSessaoState extends State<PosSessao> {
                 child: Text(
                   '$_rpe/10',
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
@@ -403,7 +402,7 @@ class _PosSessaoState extends State<PosSessao> {
                         child: Text(
                           '$i',
                           style: TextStyle(
-                            color: _rpe == i ? Colors.black : _muted,
+                            color: _rpe == i ? Colors.white : _muted,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                           ),
@@ -434,7 +433,7 @@ class _PosSessaoState extends State<PosSessao> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(7),
             ),
             child: Row(
@@ -451,14 +450,14 @@ class _PosSessaoState extends State<PosSessao> {
                         color: _urinaCores[i],
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _urinaSelecionada == i ? _lime : Colors.black,
+                          color: _urinaSelecionada == i ? _lime : Colors.white,
                           width: 2,
                         ),
                       ),
                       child: _urinaSelecionada == i
                           ? const Icon(
                               Icons.check,
-                              color: Colors.black,
+                              color: Colors.white,
                               size: 16,
                             )
                           : null,
@@ -479,14 +478,14 @@ class _PosSessaoState extends State<PosSessao> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(8),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B1B1B), Color(0xFF202415)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: _surfaceLight),
       ),
-      child: child,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: _lime, width: 2)),
+        ),
+        child: Padding(padding: const EdgeInsets.only(left: 12), child: child),
+      ),
     );
   }
 
@@ -518,7 +517,7 @@ class _PosSessaoState extends State<PosSessao> {
         onPressed: _salvarSessao,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
         icon: const Icon(Icons.save_outlined, size: 16),
@@ -542,7 +541,7 @@ class _PosSessaoState extends State<PosSessao> {
         onPressed: _descartarRegistro,
         style: OutlinedButton.styleFrom(
           foregroundColor: _muted,
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+          side: const BorderSide(color: _surfaceLight),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
         child: const Text(
@@ -553,66 +552,6 @@ class _PosSessaoState extends State<PosSessao> {
             letterSpacing: 1.4,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    const items = [
-      (Icons.water_drop_outlined, 'SESSION'),
-      (Icons.history_rounded, 'HISTORY'),
-      (Icons.insert_chart_outlined, 'STATS'),
-      (Icons.track_changes, 'GOALS'),
-    ];
-
-    return Container(
-      height: 58,
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < items.length; i++)
-            InkWell(
-              onTap: () {
-                if (i == 0) {
-                  Navigator.of(
-                    context,
-                  ).pushReplacementNamed(AppRotas.dashboardAtleta);
-                } else if (i == 1) {
-                  Navigator.of(
-                    context,
-                  ).pushReplacementNamed(AppRotas.historicoAtleta);
-                }
-              },
-              child: SizedBox(
-                width: 68,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(items[i].$1, color: i == 0 ? _lime : _muted, size: 18),
-                    const SizedBox(height: 3),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        items[i].$2,
-                        style: TextStyle(
-                          color: i == 0 ? _lime : _muted,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.7,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -631,8 +570,8 @@ class _ChoicePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const lime = Color(0xFFB9FF00);
-    const muted = Color(0xFF858585);
+    const lime = Color(0xFFB32025);
+    const muted = Color(0xFF6B6B6B);
 
     return InkWell(
       onTap: onTap,
@@ -640,7 +579,7 @@ class _ChoicePill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? lime.withValues(alpha: 0.18) : Colors.black,
+          color: selected ? lime.withValues(alpha: 0.18) : Colors.white,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: selected ? lime : Colors.transparent),
         ),

@@ -26,7 +26,7 @@ class AtletaBottomNavBar extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black54,
+            color: Color(0x1A000000),
             blurRadius: 18,
             offset: Offset(0, -8),
           ),

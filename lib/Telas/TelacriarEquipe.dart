@@ -9,13 +9,12 @@ class TelacriarEquipe extends StatefulWidget {
 }
 
 class _TelacriarEquipeState extends State<TelacriarEquipe> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _lime = Color(0xFFB9FF00);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _lime = Color(0xFFB32025);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
-  int _currentNavIndex = 1;
   bool _carregando = false;
 
   final TextEditingController _nomeController = TextEditingController();
@@ -80,27 +79,6 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
     }
   }
 
-  void _navegarTela(int index) {
-    setState(() => _currentNavIndex = index);
-
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/dashboard');
-        break;
-      case 1:
-        Navigator.of(context).pushReplacementNamed('/equipes');
-        break;
-      case 2:
-        Navigator.of(context).pushReplacementNamed('/graficos');
-        break;
-      case 3:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil do treinador em breve')),
-        );
-        break;
-    }
-  }
-
   @override
   void dispose() {
     _nomeController.dispose();
@@ -112,7 +90,6 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _background,
-      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -163,11 +140,6 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
           ),
         ),
         const Spacer(),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none, color: _muted, size: 20),
-        ),
       ],
     );
   }
@@ -254,44 +226,34 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
   }
 
   Widget _buildSalvarButton() {
-    return Center(
-      child: SizedBox(
-        width: 190,
-        height: 52,
-        child: FilledButton(
-          onPressed: _carregando ? null : _salvarEquipe,
-          style: FilledButton.styleFrom(
-            backgroundColor: _lime,
-            disabledBackgroundColor: _muted,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          child: _carregando
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
-              : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'SALVAR EQUIPE',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.bolt, color: Colors.black, size: 16),
-                  ],
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: FilledButton.icon(
+        onPressed: _carregando ? null : _salvarEquipe,
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          disabledBackgroundColor: _muted,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+        ),
+        icon: _carregando
+            ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
+              )
+            : const Icon(Icons.save_outlined, size: 18),
+        label: const Text(
+          'SALVAR EQUIPE',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.4,
+          ),
         ),
       ),
     );
@@ -303,7 +265,9 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: _surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           title: const Text('Equipe criada'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -315,7 +279,7 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: _lime.withValues(alpha: 0.3)),
                 ),
@@ -381,7 +345,7 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFF505050), fontSize: 12),
       filled: true,
-      fillColor: Colors.black,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
@@ -402,7 +366,7 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      dropdownColor: Colors.black,
+      dropdownColor: Colors.white,
       icon: const Icon(Icons.keyboard_arrow_down, color: _muted, size: 18),
       style: const TextStyle(color: _text, fontSize: 13),
       decoration: _inputDecoration('Selecione'),
@@ -415,60 +379,6 @@ class _TelacriarEquipeState extends State<TelacriarEquipe> {
           )
           .toList(),
       onChanged: onChanged,
-    );
-  }
-
-  Widget _buildBottomNav() {
-    const items = [
-      (Icons.home_rounded, 'HOME'),
-      (Icons.groups_2_outlined, 'EQUIPES'),
-      (Icons.history_rounded, 'HISTORICO'),
-      (Icons.person_outline_rounded, 'PERFIL'),
-    ];
-
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < items.length; i++)
-            InkWell(
-              onTap: () => _navegarTela(i),
-              child: SizedBox(
-                width: 74,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      items[i].$1,
-                      color: _currentNavIndex == i ? _lime : _muted,
-                      size: 22,
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        items[i].$2,
-                        style: TextStyle(
-                          color: _currentNavIndex == i ? _lime : _muted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

@@ -13,12 +13,12 @@ class TelastatsAtleta extends StatefulWidget {
 }
 
 class _TelastatsAtletaState extends State<TelastatsAtleta> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
   static const _danger = Color(0xFFFF6B6B);
   static const _success = Color(0xFF51CF66);
 
@@ -46,14 +46,17 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
       return StatsData(
         sweatRate: (stats['taxaSudoroseMedia'] as num?)?.toDouble() ?? 1.85,
         intensity: 'ALTA',
-        temperature: (sessao['temperaturaAmbiente'] as num?)?.toDouble() ?? 28.0,
+        temperature:
+            (sessao['temperaturaAmbiente'] as num?)?.toDouble() ?? 28.0,
         humidity: (sessao['umidadeRelativa'] as num?)?.toInt() ?? 65,
         performanceData: [],
         fluidLoss: (stats['perdaLiquidoAjustada'] as num?)?.toDouble() ?? 2.42,
         variation: (stats['variacaoSudorese'] as num?)?.toDouble() ?? -1.8,
         theoreticalBalance: (stats['balancoTeorico'] as num?)?.toInt() ?? -450,
-        recommendedIntakeMin: (stats['recomendacaoIntakeMin'] as num?)?.toInt() ?? 500,
-        recommendedIntakeMax: (stats['recomendacaoIntakeMax'] as num?)?.toInt() ?? 750,
+        recommendedIntakeMin:
+            (stats['recomendacaoIntakeMin'] as num?)?.toInt() ?? 500,
+        recommendedIntakeMax:
+            (stats['recomendacaoIntakeMax'] as num?)?.toInt() ?? 750,
         interval: (stats['intervaloRecomendado'] as num?)?.toInt() ?? 15,
       );
     } catch (e) {
@@ -89,7 +92,9 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
 
   Future<StatsData> _loadLastSessionStats() async {
     try {
-      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(widget.atletaId);
+      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(
+        widget.atletaId,
+      );
       if (sessoes.isEmpty) {
         return StatsData.empty();
       }
@@ -104,7 +109,9 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
 
   Future<List<PerformancePoint>> _loadLastSessionPerformance() async {
     try {
-      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(widget.atletaId);
+      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(
+        widget.atletaId,
+      );
       if (sessoes.isEmpty) {
         return _defaultPerformanceData();
       }
@@ -160,9 +167,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
               future: _statsDataFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(color: _lime),
-                  );
+                  return Center(child: CircularProgressIndicator(color: _lime));
                 }
 
                 if (snapshot.hasError || snapshot.data == null) {
@@ -278,14 +283,14 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: _lime.withValues(alpha: 0.3),
-                  ),
+                  border: Border.all(color: _lime.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   'INTENSIDADE ${data.intensity}',
@@ -299,14 +304,14 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
               ),
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: _cyan.withValues(alpha: 0.3),
-                  ),
+                  border: Border.all(color: _cyan.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   '${data.temperature.toStringAsFixed(0)}°C / ${data.humidity}% UR',
@@ -550,12 +555,12 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
         children: [
           Row(
             children: [
-              const Icon(Icons.opacity, color: Colors.black, size: 20),
+              const Icon(Icons.opacity, color: Colors.white, size: 20),
               const SizedBox(width: 8),
               const Text(
                 'PLANO DE REPOSIÇÃO',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
@@ -571,7 +576,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
               Text(
                 '${data.recommendedIntakeMin}-${data.recommendedIntakeMax}',
                 style: const TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                 ),
@@ -580,7 +585,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
               const Text(
                 'mL/h',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -610,13 +615,13 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.black, size: 18),
+        Icon(icon, color: Colors.white, size: 18),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: const TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w500,
               height: 1.3,
@@ -637,7 +642,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
             onPressed: _saveResults,
             style: ElevatedButton.styleFrom(
               backgroundColor: _lime,
-              foregroundColor: Colors.black,
+              foregroundColor: Colors.white,
               elevation: 8,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -683,17 +688,19 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
   }
 
   Widget _buildBottomNav(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     const items = [
       (Icons.water_drop, 'SESSAO'),
       (Icons.history_rounded, 'HISTORICO'),
-      (Icons.insert_chart_outlined, 'STATS'),
-      (Icons.track_changes, 'METAS'),
+      (Icons.insert_chart_outlined, 'STATUS'),
+      (Icons.person, 'PERFIL'),
     ];
 
     return Container(
-      height: 72,
+      height: 72 + bottomInset,
+      padding: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: const Color(0xFFFFFFFF),
         border: Border(
           top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -705,15 +712,21 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
             InkWell(
               onTap: () {
                 if (i == 0) {
-                  Navigator.of(context)
-                      .pushReplacementNamed('/dashboard-atleta');
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed('/dashboard-atleta');
                 } else if (i == 1) {
-                  Navigator.of(context)
-                      .pushReplacementNamed(AppRotas.historicoAtleta);
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.historicoAtleta);
                 } else if (i == 2) {
-                  // Já está em STATS
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.taxaMedia);
                 } else if (i == 3) {
-                  // Navegar para METAS quando criada
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.perfilAtleta);
                 }
               },
               child: SizedBox(
@@ -843,7 +856,8 @@ class PerformanceChartPainter extends CustomPainter {
     final path = Path();
     for (int i = 0; i < data.length; i++) {
       final x = (size.width / (data.length - 1)) * i;
-      final y = size.height -
+      final y =
+          size.height -
           ((data[i].value - minValue) / (maxValue - minValue)) * size.height;
 
       if (i == 0) {
@@ -858,7 +872,8 @@ class PerformanceChartPainter extends CustomPainter {
     // Desenhar pontos
     for (int i = 0; i < data.length; i++) {
       final x = (size.width / (data.length - 1)) * i;
-      final y = size.height -
+      final y =
+          size.height -
           ((data[i].value - minValue) / (maxValue - minValue)) * size.height;
 
       canvas.drawCircle(Offset(x, y), 4, dotPaint);

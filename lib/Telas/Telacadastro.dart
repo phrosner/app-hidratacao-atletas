@@ -9,12 +9,12 @@ class TelaCadastroAtleta extends StatefulWidget {
 }
 
 class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _codigoController = TextEditingController();
@@ -48,7 +48,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
               primary: _lime,
-              onPrimary: Colors.black,
+              onPrimary: Colors.white,
               surface: _surface,
               onSurface: _text,
             ),
@@ -95,7 +95,9 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
       );
       Navigator.pushReplacementNamed(context, '/dashboard-atleta');
     } catch (e) {
-      _mostrarMensagem('Erro no cadastro: ${e.toString().replaceAll("Exception: ", "")}');
+      _mostrarMensagem(
+        'Erro no cadastro: ${e.toString().replaceAll("Exception: ", "")}',
+      );
     }
   }
 
@@ -287,7 +289,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
         ),
         suffixIcon: Icon(icon, color: _muted, size: 18),
         filled: true,
-        fillColor: Colors.black,
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 16,
@@ -312,7 +314,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
         onPressed: _salvarCadastro,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
           shadowColor: _lime.withValues(alpha: 0.55),
           elevation: 10,

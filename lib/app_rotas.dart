@@ -9,8 +9,12 @@ abstract final class AppRotas {
   /// Inicio de uma nova sessao de treino do atleta.
   static const String iniciarTreino = '/iniciar-treino';
 
+  /// Sessao de treino ativa do atleta.
+  static const String sessaoAtiva = '/sessao-ativa';
+
   /// Resultado da taxa media de sudorese do treino.
   static const String taxaMedia = '/taxa-media';
+
   /// Registro pos-sessao do atleta.
   static const String posSessao = '/pos-sessao';
 
@@ -18,4 +22,7 @@ abstract final class AppRotas {
   static const String historicoAtleta = '/historico-atleta';
 
   static const String statsAtleta = '/statsAtleta';
+
+  /// Perfil do atleta.
+  static const String perfilAtleta = '/perfil-atleta';
 }
