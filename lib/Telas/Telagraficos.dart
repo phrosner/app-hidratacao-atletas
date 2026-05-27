@@ -77,16 +77,15 @@ class _TelagraficosState extends State<Telagraficos> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0D),
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         title: const Text(
           'ANALISE',
           style: TextStyle(
-            color: Color(0xFFFF4D6D),
+            color: Color(0xFFB32025),
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Bebas Neue',
             letterSpacing: 2,
           ),
         ),
