@@ -13,13 +13,13 @@ class Telalogin extends StatefulWidget {
 }
 
 class _TelaloginState extends State<Telalogin> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   bool mostrarSenha = false;
   bool carregandoLogin = false;
@@ -72,7 +72,7 @@ class _TelaloginState extends State<Telalogin> {
       return 'http://localhost:8080';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.2.3.100:8080';
+      return 'http://10.2.2.246:8080';
     }
     return 'http://localhost:8080';
   }
@@ -284,7 +284,7 @@ class _TelaloginState extends State<Telalogin> {
       height: 50,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(7),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
@@ -369,7 +369,7 @@ class _TelaloginState extends State<Telalogin> {
         hintStyle: const TextStyle(color: _muted, fontSize: 14),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.black,
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 18,
@@ -395,7 +395,7 @@ class _TelaloginState extends State<Telalogin> {
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
           disabledBackgroundColor: _muted,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 12,
           shadowColor: _lime.withValues(alpha: 0.55),
@@ -406,7 +406,7 @@ class _TelaloginState extends State<Telalogin> {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : const Row(
@@ -455,7 +455,7 @@ class _StatusDot extends StatelessWidget {
         Text(
           text,
           style: const TextStyle(
-            color: Color(0xFF858585),
+            color: Color(0xFF6B6B6B),
             fontSize: 8,
             fontWeight: FontWeight.w900,
             letterSpacing: 1,

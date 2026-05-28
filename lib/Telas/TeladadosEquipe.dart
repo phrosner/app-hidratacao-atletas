@@ -11,20 +11,19 @@ class TeladadosEquipe extends StatefulWidget {
 }
 
 class _TeladadosEquipeState extends State<TeladadosEquipe> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
   static const _danger = Color(0xFFD58686);
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
-  int _currentNavIndex = 1;
   String? _categoriaSelect;
   String? _modalidadeSelect;
 
@@ -132,27 +131,6 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     );
   }
 
-  void _navegarTela(int index) {
-    setState(() => _currentNavIndex = index);
-
-    switch (index) {
-      case 0:
-        Navigator.of(context).pushReplacementNamed('/dashboard');
-        break;
-      case 1:
-        Navigator.of(context).pushReplacementNamed('/equipes');
-        break;
-      case 2:
-        Navigator.of(context).pushReplacementNamed('/graficos');
-        break;
-      case 3:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil do treinador em breve')),
-        );
-        break;
-    }
-  }
-
   @override
   void dispose() {
     _nomeController.dispose();
@@ -165,7 +143,6 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _background,
-      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -226,12 +203,6 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
           ),
         ),
         const Spacer(),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none, color: _text, size: 21),
-        ),
-        const SizedBox(width: 6),
         Container(
           height: 34,
           width: 34,
@@ -342,7 +313,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
           child: Text(
             '${_atletas.length.toString().padLeft(2, '0')} ATLETAS',
             style: const TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontSize: 8,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.8,
@@ -364,7 +335,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
             onPressed: _adicionarAtleta,
             style: FilledButton.styleFrom(
               backgroundColor: _lime,
-              foregroundColor: Colors.black,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -424,7 +395,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFF505050), fontSize: 12),
       filled: true,
-      fillColor: Colors.black,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(7),
@@ -445,7 +416,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      dropdownColor: Colors.black,
+      dropdownColor: Colors.white,
       icon: const Icon(Icons.keyboard_arrow_down, color: _lime, size: 22),
       style: const TextStyle(color: _text, fontSize: 13),
       decoration: _inputDecoration('Selecione'),
@@ -473,7 +444,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
           hintStyle: const TextStyle(color: _muted, fontSize: 12),
           prefixIcon: const Icon(Icons.search, color: _text, size: 18),
           filled: true,
-          fillColor: Colors.black,
+          fillColor: Colors.white,
           contentPadding: EdgeInsets.zero,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(7),
@@ -587,77 +558,23 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
   Widget _buildSalvarButton() {
     return SizedBox(
       width: double.infinity,
-      height: 66,
+      height: 54,
       child: FilledButton.icon(
         onPressed: _salvarAlteracoes,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
         ),
-        icon: const Icon(Icons.save_outlined, size: 22),
+        icon: const Icon(Icons.save_outlined, size: 18),
         label: const Text(
           'SALVAR ALTERACOES',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.4,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    const items = [
-      (Icons.home_rounded, 'HOME'),
-      (Icons.groups_2_outlined, 'EQUIPES'),
-      (Icons.history_rounded, 'HISTORICO'),
-      (Icons.person_outline_rounded, 'PERFIL'),
-    ];
-
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < items.length; i++)
-            InkWell(
-              onTap: () => _navegarTela(i),
-              child: SizedBox(
-                width: 74,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      items[i].$1,
-                      color: _currentNavIndex == i ? _lime : _muted,
-                      size: 22,
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        items[i].$2,
-                        style: TextStyle(
-                          color: _currentNavIndex == i ? _lime : _muted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }

@@ -1,29 +1,13 @@
-package br.com.hidratrack.HidraTrack.model;
+package br.com.hidratrack.HidraTrack.dto;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "consumo_agua")
-public class ConsumoAgua {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class ConsumoAguaDTO {
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "sessao_id", nullable = false)
-    private SessaoTreino sessao;
-
     private Integer tempoDecorridoMinutos;
-
-    @Column(nullable = false)
-    private Integer quantidadeMl; // Quantidade em mL
-
-    private String tipoLiquido; // Água, Água com Eletrólitos, Suco, etc.
-
-    @Column(nullable = false)
-    private LocalDateTime timestamp = LocalDateTime.now();
+    private Integer quantidadeMl;
+    private String tipoLiquido;
+    private LocalDateTime timestamp;
 
     // Getters e Setters
     public Long getId() {
@@ -32,14 +16,6 @@ public class ConsumoAgua {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public SessaoTreino getSessao() {
-        return sessao;
-    }
-
-    public void setSessao(SessaoTreino sessao) {
-        this.sessao = sessao;
     }
 
     public Integer getTempoDecorridoMinutos() {

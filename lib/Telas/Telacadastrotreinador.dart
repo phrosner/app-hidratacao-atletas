@@ -9,12 +9,12 @@ class TelaCadastroTreinador extends StatefulWidget {
 }
 
 class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   bool _obscureSenha = true;
   bool _obscureConfirmacao = true;
@@ -47,7 +47,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
               primary: _lime,
-              onPrimary: Colors.black,
+              onPrimary: Colors.white,
               surface: _surface,
               onSurface: _text,
             ),
@@ -152,7 +152,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
             offset: const Offset(0, -42),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.38),
+            color: Colors.white.withValues(alpha: 0.38),
             blurRadius: 40,
             offset: const Offset(0, 24),
           ),
@@ -275,7 +275,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
         prefixIcon: Icon(icon, color: _muted, size: 17),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.black,
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 16,
@@ -300,7 +300,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
         onPressed: _salvarCadastro,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
           elevation: 10,
           shadowColor: _lime.withValues(alpha: 0.55),

@@ -11,12 +11,12 @@ class TeladadosAtletas extends StatefulWidget {
 }
 
 class _TeladadosAtletasState extends State<TeladadosAtletas> {
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _idadeController = TextEditingController();
@@ -347,7 +347,7 @@ class _TeladadosAtletasState extends State<TeladadosAtletas> {
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFF505050), fontSize: 12),
       filled: true,
-      fillColor: Colors.black,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(7),
@@ -368,7 +368,7 @@ class _TeladadosAtletasState extends State<TeladadosAtletas> {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      dropdownColor: Colors.black,
+      dropdownColor: Colors.white,
       icon: const Icon(Icons.keyboard_arrow_down, color: _muted, size: 20),
       style: const TextStyle(color: _text, fontSize: 14),
       decoration: _inputDecoration('Selecione'),
@@ -450,7 +450,7 @@ class _TeladadosAtletasState extends State<TeladadosAtletas> {
         onPressed: _salvarAlteracoes,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
           elevation: 10,
           shadowColor: _lime.withValues(alpha: 0.5),

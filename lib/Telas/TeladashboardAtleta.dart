@@ -8,13 +8,13 @@ class TelaDashboardAtleta extends StatelessWidget {
     this.onStartSession,
   });
 
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _surfaceLight = Color(0xFF242424);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-  static const _muted = Color(0xFF858585);
+  static const _background = Color(0xFFFFFFFF);
+  static const _surface = Color(0xFFF7F7F7);
+  static const _surfaceLight = Color(0xFFEDEDED);
+  static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
+  static const _text = Color(0xFF222222);
+  static const _muted = Color(0xFF6B6B6B);
 
   final AtletaDashboardData data;
   final VoidCallback? onStartSession;
@@ -40,13 +40,11 @@ class TelaDashboardAtleta extends StatelessWidget {
                       const SizedBox(height: 54),
                       _buildGreeting(),
                       const SizedBox(height: 28),
-                      _buildSessionCard(),
+                      _buildWeatherCard(),
                       const SizedBox(height: 26),
                       _buildStatsRow(),
                       const SizedBox(height: 18),
                       _buildWeeklyHydration(),
-                      const SizedBox(height: 30),
-                      _buildTrackerCard(),
                     ]),
                   ),
                 ),
@@ -75,131 +73,6 @@ class TelaDashboardAtleta extends StatelessWidget {
         fontSize: 24,
         fontWeight: FontWeight.w900,
         height: 1.05,
-      ),
-    );
-  }
-
-  Widget _buildSessionCard() {
-    return Container(
-      height: 164,
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(9),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B1B1B), Color(0xFF0B2E2E)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'PROXIMA SESSAO',
-                style: TextStyle(
-                  color: _cyan,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Text(
-                  '18:30h',
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            'Treino de\nPotencia',
-            style: TextStyle(
-              color: _text,
-              fontSize: 29,
-              fontWeight: FontWeight.w900,
-              height: 0.92,
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              _buildAvatarStrip(),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  foregroundColor: _cyan,
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
-                label: const Text(
-                  'DETALHES',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.8,
-                  ),
-                ),
-                iconAlignment: IconAlignment.end,
-                icon: const Icon(Icons.arrow_forward, size: 16),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarStrip() {
-    const colors = [Color(0xFF0B6D72), Color(0xFF21465C), Color(0xFF333333)];
-
-    return SizedBox(
-      height: 28,
-      width: 82,
-      child: Stack(
-        children: [
-          for (var i = 0; i < 3; i++)
-            Positioned(
-              left: i * 18,
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: colors[i],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _surface, width: 2),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  i == 2 ? '+3' : String.fromCharCode(82 + i),
-                  style: const TextStyle(
-                    color: _text,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -396,53 +269,93 @@ class TelaDashboardAtleta extends StatelessWidget {
     );
   }
 
-  Widget _buildTrackerCard() {
+  Widget _buildWeatherCard() {
     return Container(
-      height: 104,
-      padding: const EdgeInsets.all(20),
+      height: 118,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: _surfaceLight,
-              borderRadius: BorderRadius.circular(7),
+          Positioned(
+            right: -8,
+            top: -12,
+            child: Icon(
+              Icons.cloud_outlined,
+              color: Colors.white.withValues(alpha: 0.1),
+              size: 70,
             ),
-            child: const Icon(Icons.workspace_premium, color: _lime, size: 22),
           ),
-          const SizedBox(width: 18),
-          const Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ELITE TRACKER',
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Clima Local',
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.8,
+                ),
+              ),
+              const Spacer(),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.bottomLeft,
+                      child: Text(
+                        '31C',
+                        style: TextStyle(
+                          color: _text,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                SizedBox(height: 7),
-                Text(
-                  'Faltam 2 sessoes para o proximo nivel.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _muted, fontSize: 11, height: 1.2),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        'SP, BR - Seco',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.water_drop_outlined, color: _cyan, size: 14),
+                  const SizedBox(width: 5),
+                  const Text(
+                    'UMIDADE 42%',
+                    style: TextStyle(
+                      color: _muted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right, color: _muted, size: 24),
         ],
       ),
     );
@@ -458,7 +371,7 @@ class TelaDashboardAtleta extends StatelessWidget {
               Navigator.of(context).pushNamed(AppRotas.iniciarTreino);
             },
         backgroundColor: _lime,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         elevation: 12,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         icon: const Icon(Icons.add, size: 22),
@@ -475,17 +388,19 @@ class TelaDashboardAtleta extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     const items = [
       (Icons.water_drop, 'SESSAO'),
       (Icons.history_rounded, 'HISTORICO'),
-      (Icons.insert_chart_outlined, 'STATS'),
-      (Icons.track_changes, 'METAS'),
+      (Icons.insert_chart_outlined, 'STATUS'),
+      (Icons.person, 'PERFIL'),
     ];
 
     return Container(
-      height: 72,
+      height: 72 + bottomInset,
+      padding: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: const Color(0xFFFFFFFF),
         border: Border(
           top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -504,6 +419,14 @@ class TelaDashboardAtleta extends StatelessWidget {
                   Navigator.of(
                     context,
                   ).pushReplacementNamed(AppRotas.historicoAtleta);
+                } else if (i == 2) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.taxaMedia);
+                } else if (i == 3) {
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRotas.perfilAtleta);
                 }
               },
               child: SizedBox(
@@ -602,8 +525,8 @@ class AtletaDashboardData {
       variationLabel: 'VARIACAO',
       variationValue: variationString,
       variationColor: variationPositive
-          ? const Color(0xFFB9FF00)
-          : const Color(0xFF00E5FF),
+          ? const Color(0xFFB32025)
+          : const Color(0xFF8F171B),
       weeklyHydration: '88%',
     );
   }
