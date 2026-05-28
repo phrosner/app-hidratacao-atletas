@@ -15,6 +15,7 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
   static const _surface = Color(0xFFF7F7F7);
   static const _surfaceLight = Color(0xFFEDEDED);
   static const _lime = Color(0xFFB32025);
+  static const _cyan = Color(0xFF8F171B);
   static const _text = Color(0xFF222222);
   static const _muted = Color(0xFF6B6B6B);
 
@@ -43,14 +44,26 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
     final atleta = widget.atleta;
 
     _nomeController.text = atleta?.nome ?? 'Ricardo Santos Oliveira';
-    _idadeController.text = '24';
-    _modalidadeController.text = 'Crossfit / Levantamento de Peso';
-    _equipeController.text = 'Powerlifting Team';
+    _idadeController.text = (atleta?.idade ?? 24).toString();
+    _modalidadeController.text =
+        atleta?.modalidade ?? 'Crossfit / Levantamento de Peso';
+    _equipeController.text = atleta?.equipeAtual.isNotEmpty == true
+        ? atleta!.equipeAtual
+        : 'Powerlifting Team';
     _categoriaController.text = atleta?.categoria ?? 'Alpha Performance';
-    _pesoController.text = '88.5';
-    _alturaController.text = '184';
-    _generoSelect = generos.first;
-    _nivelSelect = 'Avancado';
+    _pesoController.text = (atleta?.pesoKg ?? 88.5).toStringAsFixed(1);
+    _alturaController.text = (atleta?.alturaCm ?? 184).toString();
+    _generoSelect = _normalizarValor(atleta?.genero, generos) ?? generos.first;
+    _nivelSelect = _normalizarValor(atleta?.nivel, niveis) ?? 'Avancado';
+  }
+
+  String? _normalizarValor(String? value, List<String> options) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.toLowerCase();
+    for (final option in options) {
+      if (option.toLowerCase() == normalized) return option;
+    }
+    return null;
   }
 
   @override
@@ -81,7 +94,9 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildTopBar(),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 22),
+                      _buildHydrationStatusCard(),
+                      const SizedBox(height: 24),
                       _buildSectionTitle('INFORMACOES PESSOAIS'),
                       const SizedBox(height: 12),
                       _buildPersonalCard(),
@@ -148,6 +163,83 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHydrationStatusCard() {
+    final atleta = widget.atleta;
+    final hidratacao = atleta?.hidratacao ?? 82;
+    final isRisk = hidratacao < 50;
+    final accent = isRisk ? _lime : _cyan;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border(left: BorderSide(color: accent, width: 3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'STATUS HIDRICO',
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.7,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$hidratacao%',
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: Text(
+                        atleta?.status ?? 'MONITORADO',
+                        style: const TextStyle(
+                          color: _text,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 96,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: (hidratacao / 100).clamp(0, 1).toDouble(),
+                minHeight: 8,
+                color: accent,
+                backgroundColor: _surfaceLight,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

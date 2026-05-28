@@ -10,9 +10,10 @@ import 'package:hidratrack/Telas/Telahistorico.dart';
 import 'package:hidratrack/Telas/TelainiciarTreino.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/Telas/Telaperfil.dart';
-import 'package:hidratrack/Telas/TelaTaxaMedia.dart';
+import 'package:hidratrack/Telas/TelastatsAtleta.dart';
 import 'package:hidratrack/Telas/TelaSessaoAtiva.dart';
 import 'package:hidratrack/Telas/Pos_sessao.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,20 +56,33 @@ class MyApp extends StatelessWidget {
         AppRotas.sessaoAtiva: (context) => const TelaSessaoAtiva(),
         AppRotas.posSessao: (context) => const PosSessao(),
         AppRotas.historicoAtleta: (context) => const TelaHistorico(),
-        AppRotas.taxaMedia: (context) => const TelaTaxaMedia(),
+        AppRotas.taxaMedia: (context) => const TelastatsAtleta(),
+        AppRotas.statsAtleta: (context) => const TelastatsAtleta(),
         AppRotas.perfilAtleta: (context) => const Telaperfil(),
         AppRotas.dashboardAtleta: (context) => TelaDashboardAtleta(
-          data: AtletaDashboardData.fromHydrationMetrics(
-            athleteName: 'Ricardo',
-            sweatRate: 1.2,
-            recommendedIntakeLiters: 2.4,
-            recommendedWindow: const Duration(hours: 3),
-            completedPercent: 0.45,
-            averageRate: 0.8,
-            variationPercent: 12.5,
-          ),
-        ),
+              data: _buildAtletaDashboardData(),
+            ),
       },
+    );
+  }
+
+  AtletaDashboardData _buildAtletaDashboardData() {
+    final ultimaSessao = SessaoHidratacaoStore.ultima;
+    if (ultimaSessao != null) {
+      return AtletaDashboardData.fromSessao(
+        athleteName: 'Ricardo',
+        sessao: ultimaSessao,
+      );
+    }
+
+    return AtletaDashboardData.fromHydrationMetrics(
+      athleteName: 'Ricardo',
+      sweatRate: 1.2,
+      recommendedIntakeLiters: 2.4,
+      recommendedWindow: const Duration(hours: 3),
+      completedPercent: 0.45,
+      averageRate: 0.8,
+      variationPercent: 12.5,
     );
   }
 }

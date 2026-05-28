@@ -430,7 +430,7 @@ class _TelaperfilState extends State<Telaperfil> {
                 } else if (i == 2) {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed(AppRotas.taxaMedia);
+                  ).pushReplacementNamed(AppRotas.statsAtleta);
                 }
               },
               child: SizedBox(

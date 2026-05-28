@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 class TelaIniciarTreino extends StatefulWidget {
   const TelaIniciarTreino({super.key});
@@ -19,15 +20,75 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
   final TextEditingController _pesoController = TextEditingController(
     text: '74.5',
   );
+  final TextEditingController _duracaoController = TextEditingController(
+    text: '60',
+  );
+  final TextEditingController _temperaturaController = TextEditingController(
+    text: '28',
+  );
+  final TextEditingController _umidadeController = TextEditingController(
+    text: '65',
+  );
+
+  String _modalidade = 'Corrida';
+  String _intensidade = 'Moderada';
+  int _corUrina = 1;
+  bool _comSede = false;
+
+  final List<Color> _urinaCores = const [
+    Color(0xFFF9FFFF),
+    Color(0xFFFFF4A8),
+    Color(0xFFFFDD3D),
+    Color(0xFFE8A51F),
+    Color(0xFFD86B1D),
+    Color(0xFF6B3A1E),
+  ];
 
   @override
   void dispose() {
     _pesoController.dispose();
+    _duracaoController.dispose();
+    _temperaturaController.dispose();
+    _umidadeController.dispose();
     super.dispose();
   }
 
   void _iniciarTreino() {
-    Navigator.of(context).pushReplacementNamed(AppRotas.sessaoAtiva);
+    final pesoInicial = double.tryParse(
+      _pesoController.text.replaceAll(',', '.').trim(),
+    );
+    final duracaoPrevista = int.tryParse(_duracaoController.text.trim()) ?? 60;
+    final temperatura = double.tryParse(
+          _temperaturaController.text.replaceAll(',', '.').trim(),
+        ) ??
+        28;
+    final umidade = int.tryParse(_umidadeController.text.trim()) ?? 65;
+
+    if (pesoInicial == null || pesoInicial <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe uma massa corporal valida'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final inicio = RegistroInicioSessao(
+      pesoInicialKg: pesoInicial,
+      iniciadoEm: DateTime.now(),
+      modalidade: _modalidade,
+      duracaoPrevistaMin: duracaoPrevista,
+      intensidade: _intensidade,
+      temperaturaC: temperatura,
+      umidadeRelativa: umidade.clamp(0, 100).toInt(),
+      corUrinaInicial: _corUrina,
+      comSede: _comSede,
+    );
+
+    Navigator.of(
+      context,
+    ).pushReplacementNamed(AppRotas.sessaoAtiva, arguments: inicio);
   }
 
   @override
@@ -46,11 +107,15 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildTopBar(),
-                      const SizedBox(height: 118),
+                      const SizedBox(height: 42),
                       _buildWeightCard(),
-                      const SizedBox(height: 56),
+                      const SizedBox(height: 16),
+                      _buildSessionContextCard(),
+                      const SizedBox(height: 16),
+                      _buildBasalStateCard(),
+                      const SizedBox(height: 16),
                       _buildInstructionCard(),
-                      const SizedBox(height: 72),
+                      const SizedBox(height: 24),
                       _buildStartButton(),
                     ]),
                   ),
@@ -264,6 +329,213 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
     );
   }
 
+  Widget _buildSessionContextCard() {
+    return _buildPanel(
+      title: 'CONTEXTO DO TREINO',
+      child: Column(
+        children: [
+          _buildDropdown(
+            label: 'MODALIDADE',
+            value: _modalidade,
+            values: const ['Corrida', 'Ciclismo', 'Natacao', 'Forca', 'Outro'],
+            onChanged: (value) => setState(() => _modalidade = value),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInput(
+                  label: 'DURACAO MIN',
+                  controller: _duracaoController,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildInput(
+                  label: 'TEMP C',
+                  controller: _temperaturaController,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildInput(
+                    label: 'UMIDADE %', controller: _umidadeController),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (final intensidade in const ['Leve', 'Moderada', 'Alta']) ...[
+                Expanded(
+                  child: _SegmentButton(
+                    label: intensidade.toUpperCase(),
+                    selected: _intensidade == intensidade,
+                    onTap: () => setState(() => _intensidade = intensidade),
+                  ),
+                ),
+                if (intensidade != 'Alta') const SizedBox(width: 8),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasalStateCard() {
+    return _buildPanel(
+      title: 'ESTADO BASAL',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'COR DA URINA',
+            style: TextStyle(
+              color: _muted,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (var i = 0; i < _urinaCores.length; i++)
+                InkWell(
+                  onTap: () => setState(() => _corUrina = i),
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: _urinaCores[i],
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _corUrina == i ? _lime : Colors.white,
+                        width: 2,
+                      ),
+                    ),
+                    child: _corUrina == i
+                        ? const Icon(Icons.check, color: Colors.white, size: 16)
+                        : null,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            value: _comSede,
+            onChanged: (value) => setState(() => _comSede = value),
+            contentPadding: EdgeInsets.zero,
+            activeThumbColor: _lime,
+            title: const Text(
+              'Sede antes da sessao',
+              style: TextStyle(
+                color: _text,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPanel({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _surfaceLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: _lime,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.6,
+            ),
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String value,
+    required List<String> values,
+    required ValueChanged<String> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: _inputDecoration(label),
+      dropdownColor: Colors.white,
+      items: values
+          .map(
+            (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item, style: const TextStyle(fontSize: 12)),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
+    );
+  }
+
+  Widget _buildInput({
+    required String label,
+    required TextEditingController controller,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: const TextStyle(
+        color: _text,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+      ),
+      decoration: _inputDecoration(label),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        color: _muted,
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(7),
+        borderSide: const BorderSide(color: _lime),
+      ),
+    );
+  }
+
   Widget _buildStartButton() {
     return SizedBox(
       width: double.infinity,
@@ -293,6 +565,49 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentButton extends StatelessWidget {
+  const _SegmentButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const lime = Color(0xFFB32025);
+    const muted = Color(0xFF6B6B6B);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(7),
+      child: Container(
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? lime : Colors.white,
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: selected ? lime : const Color(0xFFEDEDED)),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: selected ? Colors.white : muted,
+            fontSize: 8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.8,
+          ),
         ),
       ),
     );

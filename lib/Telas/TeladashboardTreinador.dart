@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
+import 'package:hidratrack/Servicos/EquipeService.dart';
 import 'package:hidratrack/Telas/Telacadastro.dart';
 import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
@@ -38,81 +39,43 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   bool _carregandoClima = true;
   ClimaDados? _climaDados;
 
-  late final List<Equipe> _equipes;
-  late final List<AtletaListItem> _atletas;
-  late final List<Atleta> _alertas;
+  bool _carregandoDados = true;
+  List<Equipe> _equipes = [];
+  List<AtletaListItem> _atletas = [];
+  List<Atleta> _alertas = [];
 
   @override
   void initState() {
     super.initState();
     _selectedTab = widget.initialTab;
     _currentNavIndex = widget.initialNavIndex;
-    _equipes = [
-      Equipe(
-        id: 1,
-        nome: 'Equipe Sub-20',
-        status: 'FUTEBOL MASCULINO',
-        numeroAtletas: 22,
-        percentualHidratacao: 94,
-        codigoEquipe: 'HT-AAAA01',
-      ),
-      Equipe(
-        id: 2,
-        nome: 'Equipe Olimpica',
-        status: 'NATACAO',
-        numeroAtletas: 8,
-        percentualHidratacao: 81,
-        codigoEquipe: 'HT-AAAA02',
-      ),
-      Equipe(
-        id: 3,
-        nome: 'Base Feminina',
-        status: 'FUTEBOL FEMININO',
-        numeroAtletas: 16,
-        percentualHidratacao: 76,
-        codigoEquipe: 'HT-AAAA03',
-      ),
-    ];
-    _atletas = [
-      AtletaListItem(
-        id: 1,
-        categoria: 'SUB-20',
-        nome: 'Carlos Silva',
-        status: 'DESIDRATACAO CRITICA',
-        hidratacao: 4,
-      ),
-      AtletaListItem(
-        id: 2,
-        categoria: 'OLIMPICO',
-        nome: 'Gabriel Santos',
-        status: 'EM TREINO',
-        hidratacao: 85,
-      ),
-      AtletaListItem(
-        id: 3,
-        categoria: 'SUB-17',
-        nome: 'Lucas Ferreira',
-        status: 'ATENCAO',
-        hidratacao: 62,
-      ),
-      AtletaListItem(
-        id: 4,
-        categoria: 'MASTER',
-        nome: 'Rodrigo Silva',
-        status: 'DESCANSO',
-        hidratacao: 88,
-      ),
-    ];
-    _alertas = [
-      Atleta(
-        id: 1,
-        nome: 'Carlos Silva (Sub-20)',
-        situacao: 'Desidratacao critica',
-        descricao: '4% perda',
-        iconType: IconType.alerta,
-      ),
-    ];
     _carregarClima();
+    _carregarDados();
+  }
+
+  Future<void> _carregarDados() async {
+    final equipes = await EquipeService.listarEquipes();
+    final atletas = await EquipeService.listarAtletas();
+    final alertas = atletas
+        .where((atleta) => atleta.hidratacao < 50)
+        .map(
+          (atleta) => Atleta(
+            id: atleta.id,
+            nome: '${atleta.nome} (${atleta.categoria})',
+            situacao: atleta.status,
+            descricao: '${100 - atleta.hidratacao}% deficit',
+            iconType: IconType.alerta,
+          ),
+        )
+        .toList();
+
+    if (!mounted) return;
+    setState(() {
+      _equipes = equipes;
+      _atletas = atletas;
+      _alertas = alertas;
+      _carregandoDados = false;
+    });
   }
 
   Future<void> _carregarClima() async {
@@ -144,11 +107,14 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
     }
   }
 
-  void _acaoPrincipal() {
+  Future<void> _acaoPrincipal() async {
     if (_selectedTab == 0) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (context) => const TelacriarEquipe()));
+      final mudou = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (context) => const TelacriarEquipe()),
+      );
+      if (mudou == true) {
+        await _carregarDados();
+      }
       return;
     }
 
@@ -257,9 +223,8 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final horizontalPadding = constraints.maxWidth >= 600 ? 24.0 : 16.0;
-            final contentWidth = constraints.maxWidth >= 760
-                ? 520.0
-                : double.infinity;
+            final contentWidth =
+                constraints.maxWidth >= 760 ? 520.0 : double.infinity;
 
             return Align(
               alignment: Alignment.topCenter,
@@ -282,7 +247,14 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                           const SizedBox(height: 22),
                           _buildTabs(),
                           const SizedBox(height: 14),
-                          if (_selectedTab == 0)
+                          if (_carregandoDados)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: CircularProgressIndicator(color: _lime),
+                              ),
+                            )
+                          else if (_selectedTab == 0)
                             ..._equipes.map(_buildEquipeCard)
                           else
                             ..._atletas.map(_buildAtletaCard),
@@ -429,12 +401,15 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(7),
-      onTap: () {
-        Navigator.of(context).push(
+      onTap: () async {
+        final mudou = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
             builder: (context) => TeladadosEquipe(equipe: equipe),
           ),
         );
+        if (mudou == true) {
+          await _carregarDados();
+        }
       },
       child: Container(
         height: 166,

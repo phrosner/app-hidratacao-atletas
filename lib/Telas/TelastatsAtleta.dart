@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 import 'package:hidratrack/Servicos/hidratrack_api_client.dart';
 
 class TelastatsAtleta extends StatefulWidget {
@@ -80,7 +81,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
         final maxTaxa = 1.92;
 
         return PerformancePoint(
-          time: '${tempo} MIN',
+          time: '$tempo MIN',
           value: (taxa / maxTaxa).clamp(0, 1),
         );
       }).toList();
@@ -91,6 +92,11 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
   }
 
   Future<StatsData> _loadLastSessionStats() async {
+    final ultimaSessaoLocal = SessaoHidratacaoStore.ultima;
+    if (ultimaSessaoLocal != null) {
+      return StatsData.fromSessao(ultimaSessaoLocal);
+    }
+
     try {
       final sessoes = await HidraTrackApiClient.obterSessoesAtleta(
         widget.atletaId,
@@ -108,6 +114,11 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
   }
 
   Future<List<PerformancePoint>> _loadLastSessionPerformance() async {
+    final ultimaSessaoLocal = SessaoHidratacaoStore.ultima;
+    if (ultimaSessaoLocal != null) {
+      return _performanceFromSessao(ultimaSessaoLocal);
+    }
+
     try {
       final sessoes = await HidraTrackApiClient.obterSessoesAtleta(
         widget.atletaId,
@@ -122,6 +133,29 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
       print('Erro ao carregar performance: $e');
       return _defaultPerformanceData();
     }
+  }
+
+  List<PerformancePoint> _performanceFromSessao(SessaoFinalizada sessao) {
+    if (sessao.ingestoes.isEmpty || sessao.totalIngeridoMl <= 0) {
+      return _defaultPerformanceData();
+    }
+
+    var acumulado = 0;
+    final pontos = <PerformancePoint>[
+      PerformancePoint(time: '0 MIN', value: 0),
+    ];
+
+    for (final ingestao in sessao.ingestoes) {
+      acumulado += ingestao.quantidadeMl;
+      pontos.add(
+        PerformancePoint(
+          time: '${ingestao.tempoDecorrido.inMinutes} MIN',
+          value: (acumulado / sessao.totalIngeridoMl).clamp(0, 1).toDouble(),
+        ),
+      );
+    }
+
+    return pontos.length == 1 ? _defaultPerformanceData() : pontos;
   }
 
   List<PerformancePoint> _defaultPerformanceData() {
@@ -722,7 +756,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
                 } else if (i == 2) {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed(AppRotas.taxaMedia);
+                  ).pushReplacementNamed(AppRotas.statsAtleta);
                 } else if (i == 3) {
                   Navigator.of(
                     context,
@@ -784,6 +818,24 @@ class StatsData {
     required this.recommendedIntakeMax,
     required this.interval,
   });
+
+  factory StatsData.fromSessao(SessaoFinalizada sessao) {
+    final resultado = sessao.resultado;
+
+    return StatsData(
+      sweatRate: resultado.taxaSudoreseLitrosHora,
+      intensity: sessao.inicio.intensidade.toUpperCase(),
+      temperature: sessao.inicio.temperaturaC,
+      humidity: sessao.inicio.umidadeRelativa,
+      performanceData: [],
+      fluidLoss: resultado.perdaMassaAjustadaLitros,
+      variation: resultado.variacaoMassaPercentual,
+      theoreticalBalance: resultado.balancoHidricoMl,
+      recommendedIntakeMin: resultado.recomendacaoMinMlHora,
+      recommendedIntakeMax: resultado.recomendacaoMaxMlHora,
+      interval: 15,
+    );
+  }
 
   factory StatsData.empty() {
     return StatsData(
@@ -856,8 +908,7 @@ class PerformanceChartPainter extends CustomPainter {
     final path = Path();
     for (int i = 0; i < data.length; i++) {
       final x = (size.width / (data.length - 1)) * i;
-      final y =
-          size.height -
+      final y = size.height -
           ((data[i].value - minValue) / (maxValue - minValue)) * size.height;
 
       if (i == 0) {
@@ -872,8 +923,7 @@ class PerformanceChartPainter extends CustomPainter {
     // Desenhar pontos
     for (int i = 0; i < data.length; i++) {
       final x = (size.width / (data.length - 1)) * i;
-      final y =
-          size.height -
+      final y = size.height -
           ((data[i].value - minValue) / (maxValue - minValue)) * size.height;
 
       canvas.drawCircle(Offset(x, y), 4, dotPaint);

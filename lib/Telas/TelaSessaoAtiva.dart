@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 class TelaSessaoAtiva extends StatefulWidget {
   const TelaSessaoAtiva({super.key});
@@ -25,6 +26,18 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
 
   late Timer _timer;
   late Duration _elapsed;
+  RegistroInicioSessao _inicio = RegistroInicioSessao(
+    pesoInicialKg: 74.5,
+    iniciadoEm: DateTime.now(),
+    modalidade: 'Treino',
+    duracaoPrevistaMin: 60,
+    intensidade: 'Moderada',
+    temperaturaC: 28,
+    umidadeRelativa: 65,
+    corUrinaInicial: 1,
+    comSede: false,
+  );
+  bool _didLoadArgs = false;
   int _totalMl = 0;
 
   @override
@@ -35,6 +48,18 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
       if (!mounted) return;
       setState(() => _elapsed += const Duration(seconds: 1));
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLoadArgs) return;
+    _didLoadArgs = true;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is RegistroInicioSessao) {
+      _inicio = args;
+    }
   }
 
   @override
@@ -91,6 +116,16 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
 
   void _endSession() {
     _timer.cancel();
+    final ingestoes = _timeline.reversed
+        .map(
+          (log) => RegistroIngestao(
+            label: log.label.isEmpty ? 'Manual' : log.label,
+            quantidadeMl: log.amountMl,
+            tempoDecorrido: log.elapsed,
+          ),
+        )
+        .toList();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Sessao encerrada com ${_formatLiters(_totalMl)}L'),
@@ -98,7 +133,15 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-    Navigator.of(context).pushReplacementNamed(AppRotas.posSessao);
+    Navigator.of(context).pushReplacementNamed(
+      AppRotas.posSessao,
+      arguments: RegistroPosSessaoArgs(
+        inicio: _inicio,
+        duracao: _elapsed,
+        totalIngeridoMl: _totalMl,
+        ingestoes: ingestoes,
+      ),
+    );
   }
 
   String _formatElapsed(Duration duration) {
@@ -135,6 +178,8 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
                       const SizedBox(height: 28),
                       _buildStatusPill(),
                       const SizedBox(height: 26),
+                      _buildSessionSummary(),
+                      const SizedBox(height: 20),
                       _buildTimer(),
                       const SizedBox(height: 30),
                       _buildQuickHydrationHeader(),
@@ -226,6 +271,39 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSessionSummary() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: _surfaceLight,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SummaryItem(
+              label: 'MODALIDADE',
+              value: _inicio.modalidade.toUpperCase(),
+            ),
+          ),
+          Expanded(
+            child: _SummaryItem(
+              label: 'INTENSIDADE',
+              value: _inicio.intensidade.toUpperCase(),
+            ),
+          ),
+          Expanded(
+            child: _SummaryItem(
+              label: 'CLIMA',
+              value:
+                  '${_inicio.temperaturaC.toStringAsFixed(0)}C / ${_inicio.umidadeRelativa}%',
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -456,6 +534,47 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    const text = Color(0xFF222222);
+    const muted = Color(0xFF6B6B6B);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: muted,
+            fontSize: 8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: text,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }

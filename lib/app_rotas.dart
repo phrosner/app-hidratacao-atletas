@@ -21,7 +21,8 @@ abstract final class AppRotas {
   /// Historico de sessoes do atleta.
   static const String historicoAtleta = '/historico-atleta';
 
-  static const String statsAtleta = '/statsAtleta';
+  /// Resultados e recomendacoes do atleta.
+  static const String statsAtleta = '/stats-atleta';
 
   /// Perfil do atleta.
   static const String perfilAtleta = '/perfil-atleta';

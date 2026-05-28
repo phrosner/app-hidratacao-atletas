@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Telas/Pos_sessao.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 class TelaHistorico extends StatefulWidget {
   const TelaHistorico({super.key, this.atletaId = 1});
@@ -388,7 +388,7 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                 } else if (i == 2) {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed(AppRotas.taxaMedia);
+                  ).pushReplacementNamed(AppRotas.statsAtleta);
                 } else if (i == 3) {
                   Navigator.of(
                     context,
@@ -431,22 +431,22 @@ class HistoricoSessoesRepository {
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
 
-    final sessoesSalvas = SessaoStore.sessoes.map((sessao) {
-      final perda = math.max(0.0, sessao.pesoInicial - sessao.pesoFinal);
+    final sessoesSalvas = SessaoHidratacaoStore.sessoes.map((sessao) {
+      final resultado = sessao.resultado;
       return SessaoHistorico(
         atletaId: atletaId,
-        data: sessao.criadoEm,
-        titulo: 'Treino',
-        subtitulo: 'Sessao registrada',
-        sudoroseLitrosHora: perda,
+        data: sessao.finalizadoEm,
+        titulo: sessao.inicio.modalidade,
+        subtitulo:
+            '${sessao.inicio.intensidade} - ${sessao.duracao.inMinutes} min',
+        sudoroseLitrosHora: resultado.taxaSudoreseLitrosHora,
         icon: Icons.bolt,
         accentColor: const Color(0xFFB32025),
       );
     }).toList();
 
-    final sessoes = sessoesSalvas.isEmpty
-        ? _mockSessoes(atletaId)
-        : sessoesSalvas;
+    final sessoes =
+        sessoesSalvas.isEmpty ? _mockSessoes(atletaId) : sessoesSalvas;
 
     final limite = switch (filtro) {
       '7 Dias' => DateTime.now().subtract(const Duration(days: 7)),
@@ -615,9 +615,8 @@ class _SweatTrendPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (values.isEmpty) return;
 
-    final normalizedValues = values.length == 1
-        ? [values.first, values.first]
-        : values;
+    final normalizedValues =
+        values.length == 1 ? [values.first, values.first] : values;
     final maxValue = math.max(normalizedValues.reduce(math.max), 0.1);
     final minValue = normalizedValues.reduce(math.min);
     final range = math.max(maxValue - minValue, 0.1);

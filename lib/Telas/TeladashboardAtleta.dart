@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 class TelaDashboardAtleta extends StatelessWidget {
   const TelaDashboardAtleta({
@@ -365,8 +366,7 @@ class TelaDashboardAtleta extends StatelessWidget {
     return SizedBox(
       height: 56,
       child: FloatingActionButton.extended(
-        onPressed:
-            onStartSession ??
+        onPressed: onStartSession ??
             () {
               Navigator.of(context).pushNamed(AppRotas.iniciarTreino);
             },
@@ -422,7 +422,7 @@ class TelaDashboardAtleta extends StatelessWidget {
                 } else if (i == 2) {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed(AppRotas.taxaMedia);
+                  ).pushReplacementNamed(AppRotas.statsAtleta);
                 } else if (i == 3) {
                   Navigator.of(
                     context,
@@ -524,10 +524,42 @@ class AtletaDashboardData {
       averageRateValue: '${sweatRate.toStringAsFixed(1)} L/h',
       variationLabel: 'VARIACAO',
       variationValue: variationString,
-      variationColor: variationPositive
+      variationColor:
+          variationPositive ? const Color(0xFFB32025) : const Color(0xFF8F171B),
+      weeklyHydration: '88%',
+    );
+  }
+
+  factory AtletaDashboardData.fromSessao({
+    required String athleteName,
+    required SessaoFinalizada sessao,
+  }) {
+    final resultado = sessao.resultado;
+    final perdaMl = (resultado.perdaMassaAjustadaLitros * 1000).round();
+    final progresso = perdaMl <= 0 ? 0.0 : sessao.totalIngeridoMl / perdaMl;
+
+    return AtletaDashboardData(
+      greetingTitle: 'BOM TREINO, ${athleteName.toUpperCase()}!',
+      subtitle: 'Ultima sessao registrada: ${sessao.inicio.modalidade}.',
+      alertTitle: 'ALERTA DE HIDRATACAO',
+      alertSubtitle: resultado.alertaOperacional,
+      alertMessage:
+          'Recomendacao atual: ${resultado.recomendacaoMinMlHora}-${resultado.recomendacaoMaxMlHora} mL/h.',
+      hasAlert: resultado.alertaOperacional != 'Dentro do alvo operacional',
+      progress: progresso.clamp(0, 1).toDouble(),
+      progressLabel: 'COMPLETADO',
+      progressPercentage:
+          '${(progresso * 100).clamp(0, 100).toStringAsFixed(0)}% COMPLETADO',
+      averageRateLabel: 'TAXA DE SUOR',
+      averageRateValue:
+          '${resultado.taxaSudoreseLitrosHora.toStringAsFixed(2)} L/h',
+      variationLabel: 'VARIACAO',
+      variationValue:
+          '${resultado.variacaoMassaPercentual.toStringAsFixed(1)}%',
+      variationColor: resultado.variacaoMassaPercentual <= -2
           ? const Color(0xFFB32025)
           : const Color(0xFF8F171B),
-      weeklyHydration: '88%',
+      weeklyHydration: '${(progresso * 100).clamp(0, 100).toStringAsFixed(0)}%',
     );
   }
 }

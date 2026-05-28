@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 class PosSessao extends StatefulWidget {
   const PosSessao({super.key});
@@ -20,11 +21,16 @@ class _PosSessaoState extends State<PosSessao> {
   final TextEditingController _pesoFinalController = TextEditingController(
     text: '80.5',
   );
+  final TextEditingController _volumeUrinaController = TextEditingController(
+    text: '0',
+  );
 
   double _pesoInicial = 81.2;
   int _rpe = 9;
   int _urinaSelecionada = 2;
+  bool _roupasEncharcadas = false;
   bool _didLoadArgs = false;
+  RegistroPosSessaoArgs? _sessaoArgs;
 
   final Set<String> _sintomasSelecionados = {'Nausea', 'Cefaleia'};
   final List<String> _sintomas = [
@@ -46,13 +52,23 @@ class _PosSessaoState extends State<PosSessao> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _pesoFinalController.addListener(_atualizarPrevia);
+    _volumeUrinaController.addListener(_atualizarPrevia);
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_didLoadArgs) return;
     _didLoadArgs = true;
 
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is double) {
+    if (args is RegistroPosSessaoArgs) {
+      _sessaoArgs = args;
+      _pesoInicial = args.inicio.pesoInicialKg;
+    } else if (args is double) {
       _pesoInicial = args;
     } else if (args is String) {
       _pesoInicial = double.tryParse(args.replaceAll(',', '.')) ?? _pesoInicial;
@@ -61,8 +77,15 @@ class _PosSessaoState extends State<PosSessao> {
 
   @override
   void dispose() {
+    _pesoFinalController.removeListener(_atualizarPrevia);
+    _volumeUrinaController.removeListener(_atualizarPrevia);
     _pesoFinalController.dispose();
+    _volumeUrinaController.dispose();
     super.dispose();
+  }
+
+  void _atualizarPrevia() {
+    if (mounted) setState(() {});
   }
 
   void _toggleSintoma(String sintoma) {
@@ -86,17 +109,34 @@ class _PosSessaoState extends State<PosSessao> {
   void _salvarSessao() {
     final pesoFinal =
         double.tryParse(_pesoFinalController.text.replaceAll(',', '.')) ?? 0;
-
-    final registro = SessaoFinalizada(
-      pesoInicial: _pesoInicial,
-      pesoFinal: pesoFinal,
-      sintomas: _sintomasSelecionados.toList(),
-      rpe: _rpe,
-      corUrina: _urinaSelecionada,
-      criadoEm: DateTime.now(),
+    final volumeUrina = int.tryParse(_volumeUrinaController.text.trim()) ?? 0;
+    final fallbackInicio = RegistroInicioSessao(
+      pesoInicialKg: _pesoInicial,
+      iniciadoEm: DateTime.now(),
+      modalidade: 'Treino',
+      duracaoPrevistaMin: 60,
+      intensidade: 'Moderada',
+      temperaturaC: 28,
+      umidadeRelativa: 65,
+      corUrinaInicial: 1,
+      comSede: false,
     );
 
-    SessaoStore.salvar(registro);
+    final registro = SessaoFinalizada(
+      inicio: _sessaoArgs?.inicio ?? fallbackInicio,
+      pesoFinalKg: pesoFinal,
+      volumeUrinaMl: volumeUrina,
+      roupasEncharcadas: _roupasEncharcadas,
+      sintomas: _sintomasSelecionados.toList(),
+      rpe: _rpe,
+      corUrinaFinal: _urinaSelecionada,
+      finalizadoEm: DateTime.now(),
+      duracao: _sessaoArgs?.duracao ?? const Duration(hours: 1),
+      totalIngeridoMl: _sessaoArgs?.totalIngeridoMl ?? 0,
+      ingestoes: _sessaoArgs?.ingestoes ?? const [],
+    );
+
+    SessaoHidratacaoStore.salvar(registro);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -133,6 +173,10 @@ class _PosSessaoState extends State<PosSessao> {
                       _buildHeader(),
                       const SizedBox(height: 18),
                       _buildWeightCard(),
+                      const SizedBox(height: 14),
+                      _buildMeasurementQualityCard(),
+                      const SizedBox(height: 14),
+                      _buildCalculatedPreview(),
                       const SizedBox(height: 14),
                       _buildSymptomsCard(),
                       const SizedBox(height: 14),
@@ -282,6 +326,157 @@ class _PosSessaoState extends State<PosSessao> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMeasurementQualityCard() {
+    return _buildPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPanelTitle('AJUSTES DA MEDIDA'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _volumeUrinaController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'URINA DURANTE A SESSAO (ML)',
+                    labelStyle: const TextStyle(
+                      color: _muted,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(color: _lime),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SwitchListTile(
+            value: _roupasEncharcadas,
+            onChanged: (value) => setState(() => _roupasEncharcadas = value),
+            contentPadding: EdgeInsets.zero,
+            activeThumbColor: _lime,
+            title: const Text(
+              'Roupa muito encharcada ou troca de vestimenta',
+              style: TextStyle(
+                color: _text,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (_roupasEncharcadas)
+            const Text(
+              'Pode aumentar o erro da medida. Repetir em sessao semelhante se necessario.',
+              style: TextStyle(color: _muted, fontSize: 10, height: 1.3),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalculatedPreview() {
+    final registro = _buildPreviewSessao();
+    final resultado = registro.resultado;
+
+    return _buildPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPanelTitle('PREVIA DO RESULTADO'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _PreviewMetric(
+                  label: 'TAXA',
+                  value:
+                      '${resultado.taxaSudoreseLitrosHora.toStringAsFixed(2)} L/h',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _PreviewMetric(
+                  label: 'VARIACAO',
+                  value:
+                      '${resultado.variacaoMassaPercentual.toStringAsFixed(1)}%',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _PreviewMetric(
+            label: 'BALANCO',
+            value: '${resultado.balancoHidricoMl} mL',
+          ),
+          const SizedBox(height: 10),
+          Text(
+            resultado.alertaOperacional.toUpperCase(),
+            style: const TextStyle(
+              color: _lime,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  SessaoFinalizada _buildPreviewSessao() {
+    final pesoFinal =
+        double.tryParse(_pesoFinalController.text.replaceAll(',', '.')) ??
+            _pesoInicial;
+    final volumeUrina = int.tryParse(_volumeUrinaController.text.trim()) ?? 0;
+    final fallbackInicio = RegistroInicioSessao(
+      pesoInicialKg: _pesoInicial,
+      iniciadoEm: DateTime.now(),
+      modalidade: 'Treino',
+      duracaoPrevistaMin: 60,
+      intensidade: 'Moderada',
+      temperaturaC: 28,
+      umidadeRelativa: 65,
+      corUrinaInicial: 1,
+      comSede: false,
+    );
+
+    return SessaoFinalizada(
+      inicio: _sessaoArgs?.inicio ?? fallbackInicio,
+      pesoFinalKg: pesoFinal,
+      volumeUrinaMl: volumeUrina,
+      roupasEncharcadas: _roupasEncharcadas,
+      sintomas: _sintomasSelecionados.toList(),
+      rpe: _rpe,
+      corUrinaFinal: _urinaSelecionada,
+      finalizadoEm: DateTime.now(),
+      duracao: _sessaoArgs?.duracao ?? const Duration(hours: 1),
+      totalIngeridoMl: _sessaoArgs?.totalIngeridoMl ?? 0,
+      ingestoes: _sessaoArgs?.ingestoes ?? const [],
     );
   }
 
@@ -597,28 +792,48 @@ class _ChoicePill extends StatelessWidget {
   }
 }
 
-class SessaoFinalizada {
-  const SessaoFinalizada({
-    required this.pesoInicial,
-    required this.pesoFinal,
-    required this.sintomas,
-    required this.rpe,
-    required this.corUrina,
-    required this.criadoEm,
-  });
+class _PreviewMetric extends StatelessWidget {
+  const _PreviewMetric({required this.label, required this.value});
 
-  final double pesoInicial;
-  final double pesoFinal;
-  final List<String> sintomas;
-  final int rpe;
-  final int corUrina;
-  final DateTime criadoEm;
-}
+  final String label;
+  final String value;
 
-abstract final class SessaoStore {
-  static final List<SessaoFinalizada> sessoes = [];
+  @override
+  Widget build(BuildContext context) {
+    const text = Color(0xFF222222);
+    const muted = Color(0xFF6B6B6B);
 
-  static void salvar(SessaoFinalizada sessao) {
-    sessoes.add(sessao);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: muted,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: text,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
