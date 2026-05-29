@@ -10,14 +10,9 @@ import 'package:hidratrack/Telas/TelavizualizarAtletas.dart';
 import 'package:share_plus/share_plus.dart';
 
 class TelaDashboardTreinador extends StatefulWidget {
-  const TelaDashboardTreinador({
-    super.key,
-    this.initialTab = 0,
-    this.initialNavIndex = 0,
-  });
+  const TelaDashboardTreinador({super.key, this.initialTab = 0});
 
   final int initialTab;
-  final int initialNavIndex;
 
   @override
   State<TelaDashboardTreinador> createState() => _TelaDashboardTreinadorState();
@@ -34,7 +29,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   static const _danger = Color(0xFFB32025);
 
   late int _selectedTab;
-  late int _currentNavIndex;
   bool _carregandoClima = true;
   ClimaDados? _climaDados;
 
@@ -46,7 +40,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   void initState() {
     super.initState();
     _selectedTab = widget.initialTab;
-    _currentNavIndex = widget.initialNavIndex;
     _equipes = [
       Equipe(
         id: 1,
@@ -130,19 +123,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
 
   int get _totalAtletas =>
       _equipes.fold<int>(0, (total, equipe) => total + equipe.numeroAtletas);
-
-  void _selecionarNav(int index) {
-    setState(() => _currentNavIndex = index);
-
-    switch (index) {
-      case 0:
-        setState(() => _selectedTab = 0);
-        break;
-      case 1:
-        Navigator.of(context).pushNamed('/graficos');
-        break;
-    }
-  }
 
   void _acaoPrincipal() {
     if (_selectedTab == 0) {
@@ -252,7 +232,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 30),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -764,59 +743,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    const items = [
-      (Icons.home_rounded, 'HOME'),
-      (Icons.analytics_outlined, 'ANALISE'),
-    ];
-
-    return Container(
-      height: 72 + bottomInset,
-      padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < items.length; i++)
-            InkWell(
-              onTap: () => _selecionarNav(i),
-              child: SizedBox(
-                width: 104,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      items[i].$1,
-                      color: _currentNavIndex == i ? _lime : _muted,
-                      size: 22,
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        items[i].$2,
-                        style: TextStyle(
-                          color: _currentNavIndex == i ? _lime : _muted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
 class _MetricCard extends StatelessWidget {
