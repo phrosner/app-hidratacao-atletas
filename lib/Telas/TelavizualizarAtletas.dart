@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 
 class TelaVisualizarAtletas extends StatefulWidget {
@@ -93,6 +94,8 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
                       _buildSectionTitle('DADOS FISIOLOGICOS'),
                       const SizedBox(height: 14),
                       _buildPhysiologyCards(),
+                      const SizedBox(height: 18),
+                      _buildChartButton(),
                     ]),
                   ),
                 ),
@@ -413,6 +416,30 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildChartButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: FilledButton.icon(
+        onPressed: () => Navigator.of(context).pushNamed(AppRotas.taxaMedia),
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        icon: const Icon(Icons.insert_chart_outlined, size: 19),
+        label: const Text(
+          'VER GRAFICO',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
       ),
     );
   }

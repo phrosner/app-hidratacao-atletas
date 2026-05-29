@@ -4,8 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hidratrack/app_rotas.dart';
 
-class TelaTaxaMedia extends StatelessWidget {
+class TelaTaxaMedia extends StatefulWidget {
   const TelaTaxaMedia({super.key});
+
+  @override
+  State<TelaTaxaMedia> createState() => _TelaTaxaMediaState();
+}
+
+class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
 
   static const _background = Color(0xFFFFFFFF);
   static const _surface = Color(0xFFF7F7F7);
@@ -15,10 +21,10 @@ class TelaTaxaMedia extends StatelessWidget {
   static const _text = Color(0xFF222222);
   static const _muted = Color(0xFF6B6B6B);
 
-  static const double _sweatRate = 1.85;
-  static const double _waterLossLiters = 2.42;
-  static const double _weightVariation = -1.8;
-  static const int _recommendedMlHour = 750;
+  double _sweatRate = 1.85;
+  double _waterLossLiters = 2.42;
+  double _weightVariation = -1.8;
+  int _recommendedMlHour = 750;
 
   void _showAction(BuildContext context, String message) {
     HapticFeedback.selectionClick();
@@ -29,6 +35,113 @@ class TelaTaxaMedia extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _editarNumero({
+    required String titulo,
+    required double valorAtual,
+    required ValueChanged<double> aoSalvar,
+  }) async {
+    final controller = TextEditingController(text: valorAtual.toString());
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: Text(
+          titulo,
+          style: const TextStyle(color: _text, fontWeight: FontWeight.w900),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+            signed: true,
+          ),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[-0-9,.]')),
+          ],
+          decoration: const InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('CANCELAR'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _lime),
+            onPressed: () {
+              final valor = double.tryParse(
+                controller.text.trim().replaceAll(',', '.'),
+              );
+              if (valor == null) return;
+              setState(() => aoSalvar(valor));
+              Navigator.of(dialogContext).pop();
+              _showAction(context, 'Valor atualizado');
+            },
+            child: const Text('SALVAR'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+  }
+
+  Future<void> _editarInteiro({
+    required String titulo,
+    required int valorAtual,
+    required ValueChanged<int> aoSalvar,
+  }) async {
+    final controller = TextEditingController(text: valorAtual.toString());
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: Text(
+          titulo,
+          style: const TextStyle(color: _text, fontWeight: FontWeight.w900),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('CANCELAR'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _lime),
+            onPressed: () {
+              final valor = int.tryParse(controller.text.trim());
+              if (valor == null) return;
+              setState(() => aoSalvar(valor));
+              Navigator.of(dialogContext).pop();
+              _showAction(context, 'Valor atualizado');
+            },
+            child: const Text('SALVAR'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
   }
 
   @override
@@ -91,16 +204,31 @@ class TelaTaxaMedia extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text(
-            'TAXA DE SUDORESE MEDIA',
-            style: TextStyle(
-              color: _muted,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'TAXA DE SUDORESE MEDIA',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              _buildEditButton(
+                tooltip: 'Editar taxa',
+                onPressed: () => _editarNumero(
+                  titulo: 'Editar taxa de sudorese',
+                  valorAtual: _sweatRate,
+                  aoSalvar: (valor) => _sweatRate = valor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -165,6 +293,30 @@ class TelaTaxaMedia extends StatelessWidget {
     );
   }
 
+  Widget _buildEditButton({
+    required String tooltip,
+    required VoidCallback onPressed,
+    Color foreground = _muted,
+    Color background = Colors.white,
+  }) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        tooltip: tooltip,
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        style: IconButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+        ),
+        onPressed: onPressed,
+        icon: const Icon(Icons.edit_outlined, size: 17),
+      ),
+    );
+  }
+
   Widget _buildPerformanceCard() {
     return Container(
       height: 218,
@@ -176,9 +328,9 @@ class TelaTaxaMedia extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Text(
+              const Text(
                 'PERFORMANCE TREND',
                 style: TextStyle(
                   color: _cyan,
@@ -187,8 +339,14 @@ class TelaTaxaMedia extends StatelessWidget {
                   letterSpacing: 2,
                 ),
               ),
-              Spacer(),
-              Icon(Icons.auto_graph, color: _cyan, size: 20),
+              const Spacer(),
+              const Icon(Icons.auto_graph, color: _cyan, size: 20),
+              const SizedBox(width: 8),
+              _buildEditButton(
+                tooltip: 'Editar grafico',
+                onPressed: () =>
+                    _showAction(context, 'Edicao do grafico em preparacao'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -227,6 +385,11 @@ class TelaTaxaMedia extends StatelessWidget {
             title: 'PERDA AJUSTADA',
             value: '${_waterLossLiters.toStringAsFixed(2)} L',
             accent: _text,
+            onEdit: () => _editarNumero(
+              titulo: 'Editar perda ajustada',
+              valorAtual: _waterLossLiters,
+              aoSalvar: (valor) => _waterLossLiters = valor,
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -236,6 +399,11 @@ class TelaTaxaMedia extends StatelessWidget {
             value: '${_weightVariation.toStringAsFixed(1)}%',
             accent: _lime,
             highlighted: true,
+            onEdit: () => _editarNumero(
+              titulo: 'Editar variacao',
+              valorAtual: _weightVariation,
+              aoSalvar: (valor) => _weightVariation = valor,
+            ),
           ),
         ),
       ],
@@ -243,11 +411,12 @@ class TelaTaxaMedia extends StatelessWidget {
   }
 
   Widget _buildRepositionPlan() {
+    final doseMl = (_recommendedMlHour / 4).round();
     final rows = [
-      ('00:15', '190 ml', 'Inicio da reposicao'),
-      ('00:30', '190 ml', 'Manter ritmo'),
-      ('00:45', '190 ml', 'Checar sede'),
-      ('01:00', '190 ml', 'Nova avaliacao'),
+      ('00:15', '$doseMl ml', 'Inicio da reposicao'),
+      ('00:30', '$doseMl ml', 'Manter ritmo'),
+      ('00:45', '$doseMl ml', 'Checar sede'),
+      ('01:00', '$doseMl ml', 'Nova avaliacao'),
     ];
 
     return Container(
@@ -267,11 +436,15 @@ class TelaTaxaMedia extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.water_drop_outlined, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Expanded(
+              const Icon(
+                Icons.water_drop_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
                 child: Text(
                   'PLANO DE REPOSICAO',
                   style: TextStyle(
@@ -280,6 +453,16 @@ class TelaTaxaMedia extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.6,
                   ),
+                ),
+              ),
+              _buildEditButton(
+                tooltip: 'Editar plano',
+                foreground: _lime,
+                background: Colors.white,
+                onPressed: () => _editarInteiro(
+                  titulo: 'Editar recomendacao horaria',
+                  valorAtual: _recommendedMlHour,
+                  aoSalvar: (valor) => _recommendedMlHour = valor,
                 ),
               ),
             ],
@@ -506,12 +689,14 @@ class _MetricCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.accent,
+    required this.onEdit,
     this.highlighted = false,
   });
 
   final String title;
   final String value;
   final Color accent;
+  final VoidCallback onEdit;
   final bool highlighted;
 
   @override
@@ -533,14 +718,40 @@ class _MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: muted,
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: muted,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 26,
+                height: 26,
+                child: IconButton(
+                  tooltip: 'Editar',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: muted,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined, size: 14),
+                ),
+              ),
+            ],
           ),
           const Spacer(),
           Text(
