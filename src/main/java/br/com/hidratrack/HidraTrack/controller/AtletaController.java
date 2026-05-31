@@ -1,7 +1,8 @@
 package br.com.hidratrack.HidraTrack.controller;
 
-import br.com.hidratrack.HidraTrack.dto.UsuarioDTO;
+import br.com.hidratrack.HidraTrack.dto.SessaoTreinoDTO;
 import br.com.hidratrack.HidraTrack.model.Usuario;
+import br.com.hidratrack.HidraTrack.service.SessaoTreinoService;
 import br.com.hidratrack.HidraTrack.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,6 +24,26 @@ public class AtletaController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Autowired
+    private SessaoTreinoService sessaoTreinoService;
+
+    private Optional<Usuario> extrairUsuarioDoToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return Optional.empty();
+        }
+        final String token = authorizationHeader.substring(7).trim();
+        final String prefix = "dummy-token-";
+        if (!token.startsWith(prefix)) {
+            return Optional.empty();
+        }
+        try {
+            final Long userId = Long.parseLong(token.substring(prefix.length()));
+            return usuarioService.buscarPorId(userId);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
     /**
      * Obter dados do dashboard do atleta autenticado
      * Retorna: nome do atleta, métricas de hidratação, sessões recentes
@@ -30,19 +52,62 @@ public class AtletaController {
     public ResponseEntity<?> obterDashboard(
             @RequestHeader("Authorization") String token) {
         try {
-            // TODO: Extrair userId do token JWT
-            // Long userId = tokenService.extrairUserId(token);
-            
-            // Dados mock até implementar autenticação JWT
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
+            final String nomeAtleta = usuarioLogado
+                    .map(u -> u.getNome() != null && !u.getNome().isBlank() ? u.getNome() : u.getUsuario())
+                    .orElse("Atleta");
+
+            double taxaSuor = 0.0;
+            double hidratacaoRecomendada = 0.0;
+            double percentualConsumido = 0.0;
+            double consumoMedio = 0.0;
+            double temperatura = 0.0;
+            String clima = "Não informado";
+
+            if (usuarioLogado.isPresent()) {
+                final Long atletaId = usuarioLogado.get().getId();
+                final List<SessaoTreinoDTO> sessoes = sessaoTreinoService.obterSessoesAtleta(atletaId);
+                if (!sessoes.isEmpty()) {
+                    final SessaoTreinoDTO ultimaSessao = sessoes.get(0);
+                    if (ultimaSessao.getStats() != null) {
+                        if (ultimaSessao.getStats().getTaxaSudoroseMedia() != null) {
+                            taxaSuor = ultimaSessao.getStats().getTaxaSudoroseMedia();
+                        }
+                        if (ultimaSessao.getStats().getRecomendacaoIntakeMax() != null) {
+                            hidratacaoRecomendada = ultimaSessao.getStats().getRecomendacaoIntakeMax() / 1000.0;
+                        }
+                        if (ultimaSessao.getConsumos() != null && !ultimaSessao.getConsumos().isEmpty()
+                                && ultimaSessao.getStats().getRecomendacaoIntakeMax() != null
+                                && ultimaSessao.getStats().getRecomendacaoIntakeMax() > 0) {
+                            double totalMl = ultimaSessao.getConsumos().stream()
+                                    .mapToDouble(c -> c.getQuantidadeMl() != null ? c.getQuantidadeMl() : 0.0)
+                                    .sum();
+                            percentualConsumido = (totalMl / ultimaSessao.getStats().getRecomendacaoIntakeMax()) * 100.0;
+                        }
+                        if (ultimaSessao.getStats().getTaxaSudoroseMedia() != null) {
+                            consumoMedio = ultimaSessao.getStats().getTaxaSudoroseMedia();
+                        }
+                    }
+                    if (ultimaSessao.getTemperaturaAmbiente() != null) {
+                        temperatura = ultimaSessao.getTemperaturaAmbiente();
+                    }
+                    if (ultimaSessao.getUmidadeRelativa() != null) {
+                        clima = ultimaSessao.getUmidadeRelativa() > 70 ? "Úmido" : "Ameno";
+                    }
+                }
+            }
+
             Map<String, Object> dashboard = new HashMap<>();
-            dashboard.put("nomeAtleta", "Ricardo Silva");
-            dashboard.put("taxaSuor", 1.2); // L/h
-            dashboard.put("hidratacaoRecomendada", 2.4); // L
+            dashboard.put("nomeAtleta", nomeAtleta);
+            dashboard.put("taxaSuor", taxaSuor);
+            dashboard.put("hidratacaoRecomendada", hidratacaoRecomendada);
             dashboard.put("saudeGeral", "Ótimo");
             dashboard.put("ultimaSessao", LocalDateTime.now().minusHours(2));
-            dashboard.put("percentualConsumido", 45.0);
-            dashboard.put("consumoMedio", 0.8); // L/h
-            
+            dashboard.put("percentualConsumido", percentualConsumido);
+            dashboard.put("consumoMedio", consumoMedio);
+            dashboard.put("temperatura", temperatura);
+            dashboard.put("clima", clima);
+
             return ResponseEntity.ok(dashboard);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -57,11 +122,13 @@ public class AtletaController {
     public ResponseEntity<?> obterPerfil(
             @RequestHeader("Authorization") String token) {
         try {
-            // TODO: Extrair userId do token JWT
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
             Map<String, Object> perfil = new HashMap<>();
-            perfil.put("id", 1L);
-            perfil.put("nome", "Ricardo Silva");
-            perfil.put("email", "ricardo@email.com");
+            perfil.put("id", usuarioLogado.map(Usuario::getId).orElse(1L));
+            perfil.put("nome", usuarioLogado
+                    .map(u -> u.getNome() != null && !u.getNome().isBlank() ? u.getNome() : u.getUsuario())
+                    .orElse("Atleta Silva"));
+            perfil.put("email", usuarioLogado.map(Usuario::getEmail).orElse(""));
             perfil.put("peso", 75.5);
             perfil.put("altura", 180);
             perfil.put("idade", 25);

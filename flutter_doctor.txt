@@ -1,0 +1,43 @@
+﻿[ÔêÜ] Flutter (Channel stable, 3.44.0, on Microsoft Windows [vers├åo 10.0.26200.8457], locale pt-BR) [831ms]
+    ÔÇó Flutter version 3.44.0 on channel stable at C:\flutter
+    ÔÇó Upstream repository https://github.com/flutter/flutter.git
+    ÔÇó Framework revision 559ffa3f75 (13 days ago), 2026-05-15 14:13:13 -0700
+    ÔÇó Engine revision 4c525dac5e
+    ÔÇó Dart version 3.12.0
+    ÔÇó DevTools version 2.57.0
+    ÔÇó Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, enable-swift-package-manager, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+
+[ÔêÜ] Windows Version (Windows 11 or higher, 25H2, 2009) [3,0s]
+
+[!] Android toolchain - develop for Android devices (Android SDK version 36.1.0) [890ms]
+    ÔÇó Android SDK at C:\Users\halwk\AppData\Local\Android\sdk
+    ÔÇó Emulator version 36.5.11.0 (build_id 15261927) (CL:N/A)
+    X cmdline-tools component is missing.
+      Try installing or updating Android Studio.
+      Alternatively, download the tools from https://developer.android.com/studio#command-line-tools-only and make sure to set the ANDROID_HOME environment variable.
+      See https://developer.android.com/studio/command-line for more details.
+    X Android license status unknown.
+      Run `flutter doctor --android-licenses` to accept the SDK licenses.
+      See https://flutter.dev/to/windows-android-setup for more details.
+
+[ÔêÜ] Chrome - develop for the web [478ms]
+    ÔÇó Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[!] Visual Studio - develop Windows apps (Visual Studio Community 2026 18.6.2) [477ms]
+    ÔÇó Visual Studio at C:\Program Files\Microsoft Visual Studio\18\Community
+    ÔÇó Visual Studio Community 2026 version 18.6.11822.322
+    X Visual Studio is missing necessary components. Please re-run the Visual Studio installer for the "Desktop development with C++" workload, and include these components:
+        MSVC v142 - VS 2019 C++ x64/x86 build tools
+         - If there are multiple build tool versions available, install the latest
+        C++ CMake tools for Windows
+        Windows 10 SDK
+
+[ÔêÜ] Connected device (3 available) [464ms]
+    ÔÇó Windows (desktop) ÔÇó windows ÔÇó windows-x64    ÔÇó Microsoft Windows [vers├åo 10.0.26200.8457]
+    ÔÇó Chrome (web)      ÔÇó chrome  ÔÇó web-javascript ÔÇó Google Chrome 148.0.7778.181
+    ÔÇó Edge (web)        ÔÇó edge    ÔÇó web-javascript ÔÇó Microsoft Edge 148.0.3967.83
+
+[ÔêÜ] Network resources [532ms]
+    ÔÇó All expected network resources are available.
+
+! Doctor found issues in 2 categories.

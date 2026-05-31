@@ -1,10 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
 
 class AtletaService {
-  // URL base do backend - ajuste conforme seu ambiente
-  static const String _baseUrl = 'http://localhost:8080/api';
+  static String getApiBaseUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:8080';
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.2.2.246:8080';
+    }
+    return 'http://localhost:8080';
+  }
+
+  static String get _baseUrl => '${getApiBaseUrl()}/api';
   
   /// Obter dados do dashboard do atleta autenticado
   static Future<Map<String, dynamic>> obterDashboardAtleta({
@@ -20,6 +30,7 @@ class AtletaService {
       );
 
       if (response.statusCode == 200) {
+        print('AtletaService obterDashboardAtleta status=${response.statusCode} body=${response.body}');
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
         throw Exception('Não autorizado - token inválido');

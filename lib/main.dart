@@ -5,7 +5,7 @@ import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosAtletas.dart';
 import 'package:hidratrack/Telas/Telagraficos.dart';
-import 'package:hidratrack/Telas/TeladashboardAtleta.dart';
+import 'package:hidratrack/Modelos/AtletaDashboardWithBackend.dart';
 import 'package:hidratrack/Telas/Telahistorico.dart';
 import 'package:hidratrack/Telas/TelainiciarTreino.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
@@ -44,8 +44,7 @@ class MyApp extends StatelessWidget {
       routes: {
         AppRotas.dashboardTreinador: (context) =>
             const TelaDashboardTreinador(),
-        '/equipes': (context) =>
-            const TelaDashboardTreinador(initialTab: 0, initialNavIndex: 1),
+        '/equipes': (context) => const TelaDashboardTreinador(initialTab: 0),
         '/atletas': (context) => const TelaDashboardTreinador(initialTab: 1),
         '/criar-equipe': (context) => const TelacriarEquipe(),
         '/dados-equipe': (context) => const TeladadosEquipe(),
@@ -57,17 +56,10 @@ class MyApp extends StatelessWidget {
         AppRotas.historicoAtleta: (context) => const TelaHistorico(),
         AppRotas.taxaMedia: (context) => const TelaTaxaMedia(),
         AppRotas.perfilAtleta: (context) => const Telaperfil(),
-        AppRotas.dashboardAtleta: (context) => TelaDashboardAtleta(
-          data: AtletaDashboardData.fromHydrationMetrics(
-            athleteName: 'Ricardo',
-            sweatRate: 1.2,
-            recommendedIntakeLiters: 2.4,
-            recommendedWindow: const Duration(hours: 3),
-            completedPercent: 0.45,
-            averageRate: 0.8,
-            variationPercent: 12.5,
-          ),
-        ),
+        AppRotas.dashboardAtleta: (context) {
+          final token = ModalRoute.of(context)?.settings.arguments as String?;
+          return TelaDashboardAtletaComBackend(tokenAtleta: token);
+        },
       },
     );
   }

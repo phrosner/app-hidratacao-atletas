@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
 import 'package:http/http.dart' as http;
 
@@ -58,13 +59,17 @@ class _TelaloginState extends State<Telalogin> {
     return 'Erro inesperado';
   }
 
-  void _navegarAposLogin(String tipoUsuarioRaw) {
+  void _navegarAposLogin(String tipoUsuarioRaw, String token) {
     final tipo = tipoUsuarioRaw.trim().toUpperCase();
     if (tipo == 'TREINADOR' || tipo == 'NUTRICIONISTA') {
       Navigator.pushReplacementNamed(context, AppRotas.dashboardTreinador);
       return;
     }
-    Navigator.pushReplacementNamed(context, AppRotas.dashboardAtleta);
+    Navigator.pushReplacementNamed(
+      context,
+      AppRotas.dashboardAtleta,
+      arguments: token,
+    );
   }
 
   String getApiBaseUrl() {
@@ -108,9 +113,18 @@ class _TelaloginState extends State<Telalogin> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final token = data is Map ? data['token']?.toString() ?? '' : '';
+        final nome = data is Map ? data['nome']?.toString() ?? '' : '';
         final tipo = data is Map && data['tipoUsuario'] != null
             ? data['tipoUsuario'].toString().trim().toUpperCase()
             : _tipoLoginApi(_perfilSelecionado);
+
+        if (token.isNotEmpty) {
+          AuthStorage.token = token;
+          AuthStorage.nome = nome;
+          AuthStorage.tipoUsuario = tipo;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login bem sucedido'),
@@ -118,7 +132,7 @@ class _TelaloginState extends State<Telalogin> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        _navegarAposLogin(tipo);
+        _navegarAposLogin(tipo, token);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

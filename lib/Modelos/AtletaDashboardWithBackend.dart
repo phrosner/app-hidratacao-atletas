@@ -1,54 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Telas/TeladashboardAtleta.dart' as atleta_dashboard;
 import 'package:hidratrack/Servicos/AtletaService.dart';
-
-class AtletaDashboardData {
-  final String greetingTitle;
-  final double sweatRate;
-  final double recommendedIntakeLiters;
-  final Duration recommendedWindow;
-  final double completedPercent;
-  final double averageRate;
-
-  AtletaDashboardData({
-    required this.greetingTitle,
-    required this.sweatRate,
-    required this.recommendedIntakeLiters,
-    required this.recommendedWindow,
-    required this.completedPercent,
-    required this.averageRate,
-  });
-
-  factory AtletaDashboardData.fromHydrationMetrics({
-    required String athleteName,
-    required double sweatRate,
-    required double recommendedIntakeLiters,
-    required Duration recommendedWindow,
-    required double completedPercent,
-    required double averageRate,
-  }) {
-    return AtletaDashboardData(
-      greetingTitle: 'Bem-vindo, $athleteName',
-      sweatRate: sweatRate,
-      recommendedIntakeLiters: recommendedIntakeLiters,
-      recommendedWindow: recommendedWindow,
-      completedPercent: completedPercent,
-      averageRate: averageRate,
-    );
-  }
-
-  // Converter dados do backend para o modelo local
-  factory AtletaDashboardData.fromBackend(Map<String, dynamic> data) {
-    return AtletaDashboardData(
-      greetingTitle: 'Bem-vindo, ${data['nomeAtleta'] ?? 'Atleta'}',
-      sweatRate: (data['taxaSuor'] ?? 1.0).toDouble(),
-      recommendedIntakeLiters: (data['hidratacaoRecomendada'] ?? 2.0).toDouble(),
-      recommendedWindow: const Duration(hours: 3),
-      completedPercent: (data['percentualConsumido'] ?? 0) / 100,
-      averageRate: (data['consumoMedio'] ?? 0.8).toDouble(),
-    );
-  }
-}
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 
 class TelaDashboardAtletaComBackend extends StatefulWidget {
   final String? tokenAtleta;
@@ -65,8 +18,7 @@ class TelaDashboardAtletaComBackend extends StatefulWidget {
 
 class _TelaDashboardAtletaComBackendState
     extends State<TelaDashboardAtletaComBackend> {
-  late Future<AtletaDashboardData> _dashboardFuture;
-  bool _isLoading = true;
+  late Future<atleta_dashboard.AtletaDashboardData> _dashboardFuture;
   String? _erro;
 
   @override
@@ -76,283 +28,123 @@ class _TelaDashboardAtletaComBackendState
   }
 
   void _carregarDadosDashboard() {
-    final token = widget.tokenAtleta ?? 'seu_token_aqui';
+    final token = widget.tokenAtleta?.isNotEmpty == true
+        ? widget.tokenAtleta!
+        : AuthStorage.token.isNotEmpty
+            ? AuthStorage.token
+            : '';
+
     _dashboardFuture = AtletaService.obterDashboardAtleta(token: token)
-        .then((data) => AtletaDashboardData.fromBackend(data))
+        .then(_mapBackendToDashboardData)
         .catchError((e) {
-          setState(() {
-            _erro = 'Erro ao carregar dados: $e';
-            _isLoading = false;
-          });
-          throw e;
-        });
+      setState(() {
+        _erro = 'Erro ao carregar dados: $e';
+      });
+      throw e;
+    });
   }
 
-  void _recarregarDados() {
+  Future<void> _recarregarDados() async {
     setState(() {
-      _isLoading = true;
       _erro = null;
     });
     _carregarDadosDashboard();
+    await _dashboardFuture;
+  }
+
+  atleta_dashboard.AtletaDashboardData _mapBackendToDashboardData(
+      Map<String, dynamic> data) {
+    final nomeAtleta = (data['nomeAtleta'] ?? 'Atleta').toString();
+    final taxaSuor = _parseDouble(data['taxaSuor'], 1.0);
+    final hidratacaoRecomendada =
+        _parseDouble(data['hidratacaoRecomendada'], 2.0);
+    final percentualConsumido =
+        _parseDouble(data['percentualConsumido'], 0.0) / 100.0;
+    final consumoMedio =
+        _parseDouble(data['consumoMedio'], taxaSuor);
+    final variationPercent = _parseDouble(
+      data['percentualVariacao'] ?? data['variacaoPercentual'],
+      0.0,
+    );
+
+    return atleta_dashboard.AtletaDashboardData.fromHydrationMetrics(
+      athleteName: nomeAtleta,
+      sweatRate: taxaSuor,
+      recommendedIntakeLiters: hidratacaoRecomendada,
+      recommendedWindow: const Duration(hours: 3),
+      completedPercent: percentualConsumido,
+      averageRate: consumoMedio,
+      variationPercent: variationPercent,
+      hasHydrationAlert: percentualConsumido < 0.5,
+    );
+  }
+
+  double _parseDouble(dynamic value, double fallback) {
+    if (value == null) return fallback;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? fallback;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AtletaDashboardData>(
+    return FutureBuilder<atleta_dashboard.AtletaDashboardData>(
       future: _dashboardFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasError) {
           return const Scaffold(
-            backgroundColor: Color(0xFF101010),
+            backgroundColor: Colors.white,
             body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFB9FF00)),
+              child: CircularProgressIndicator(),
             ),
           );
         }
 
         if (snapshot.hasError) {
           return Scaffold(
-            backgroundColor: const Color(0xFF101010),
+            backgroundColor: Colors.white,
             body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Color(0xFFB9FF00),
-                    size: 64,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _erro ?? 'Erro ao carregar dashboard',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFFF5F5F5),
-                      fontSize: 16,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Color(0xFFB32025),
+                      size: 64,
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _recarregarDados,
-                    child: const Text('Tentar Novamente'),
-                  ),
-                ],
+                    const SizedBox(height: 18),
+                    Text(
+                      _erro ?? 'Erro ao carregar dashboard.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF222222),
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _recarregarDados,
+                      child: const Text('Tentar novamente'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         }
 
-        final data = snapshot.data!;
-        return TelaDashboardAtletaUI(
-          data: data,
-          onRefresh: _recarregarDados,
-        );
+        final data = snapshot.data;
+        if (data == null) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(child: Text('Nenhum dado disponível.')),
+          );
+        }
+
+        return atleta_dashboard.TelaDashboardAtleta(data: data);
       },
-    );
-  }
-}
-
-// UI do dashboard (mova seu código visual aqui)
-class TelaDashboardAtletaUI extends StatelessWidget {
-  const TelaDashboardAtletaUI({
-    super.key,
-    required this.data,
-    required this.onRefresh,
-  });
-
-  static const _background = Color(0xFF101010);
-  static const _surface = Color(0xFF1B1B1B);
-  static const _lime = Color(0xFFB9FF00);
-  static const _cyan = Color(0xFF00E5FF);
-  static const _text = Color(0xFFF5F5F5);
-
-  final AtletaDashboardData data;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _background,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async => onRefresh(),
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 116),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _buildBrand(),
-                    const SizedBox(height: 54),
-                    _buildGreeting(),
-                    const SizedBox(height: 28),
-                    _buildSessionCard(),
-                    const SizedBox(height: 26),
-                    _buildStatsRow(),
-                    const SizedBox(height: 18),
-                    _buildWeeklyHydration(),
-                    const SizedBox(height: 30),
-                    _buildTrackerCard(),
-                  ]),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBrand() {
-    return const Text(
-      'H2OTRACK',
-      style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w500),
-    );
-  }
-
-  Widget _buildGreeting() {
-    return Text(
-      data.greetingTitle,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: _text,
-        fontSize: 24,
-        fontWeight: FontWeight.w900,
-        height: 1.05,
-      ),
-    );
-  }
-
-  Widget _buildSessionCard() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Taxa de Suor',
-            style: TextStyle(color: _text, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${data.sweatRate.toStringAsFixed(2)} L/h',
-            style: const TextStyle(
-              color: _lime,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Recomendado: ${data.recommendedIntakeLiters.toStringAsFixed(1)}L',
-            style: const TextStyle(color: _text, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            label: 'Consumido',
-            value: '${(data.completedPercent * 100).toStringAsFixed(0)}%',
-            color: _lime,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            label: 'Média',
-            value: '${data.averageRate.toStringAsFixed(2)}L',
-            color: _cyan,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: _text, fontSize: 12)),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeeklyHydration() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Hidratação Semanal',
-            style: TextStyle(color: _text, fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: data.completedPercent,
-            backgroundColor: Colors.grey[800],
-            valueColor: const AlwaysStoppedAnimation<Color>(_lime),
-            minHeight: 6,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrackerCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: const Column(
-        children: [
-          Text(
-            'Seu tracker está funcionando',
-            style: TextStyle(color: _text, fontSize: 14),
-          ),
-        ],
-      ),
     );
   }
 }
