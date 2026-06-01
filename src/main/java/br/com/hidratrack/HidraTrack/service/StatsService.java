@@ -157,6 +157,35 @@ public class StatsService {
     }
 
     /**
+     * Atualiza os valores de StatsSessao para uma sessão existente.
+     * Retorna o DTO atualizado ou lança exceção se não existir.
+     */
+    public StatsSessaoDTO atualizarStats(Long sessaoId, StatsSessaoDTO dto) {
+        Optional<StatsSessao> opt = statsSessaoRepository.findBySessaoId(sessaoId);
+        if (opt.isEmpty()) {
+            throw new IllegalArgumentException("Stats não encontrado para a sessão: " + sessaoId);
+        }
+
+        StatsSessao stats = opt.get();
+
+        if (dto.getTaxaSudoroseMedia() != null) stats.setTaxaSudoroseMedia(dto.getTaxaSudoroseMedia());
+        if (dto.getVariacaoSudorese() != null) stats.setVariacaoSudorese(dto.getVariacaoSudorese());
+        if (dto.getPerdaLiquidoTotal() != null) stats.setPerdaLiquidoTotal(dto.getPerdaLiquidoTotal());
+        if (dto.getPerdaLiquidoAjustada() != null) stats.setPerdaLiquidoAjustada(dto.getPerdaLiquidoAjustada());
+        if (dto.getBalancoTeorico() != null) stats.setBalancoTeorico(dto.getBalancoTeorico());
+        if (dto.getDeficitLevel() != null) stats.setDeficitLevel(dto.getDeficitLevel());
+        if (dto.getRecomendacaoIntakeMin() != null) stats.setRecomendacaoIntakeMin(dto.getRecomendacaoIntakeMin());
+        if (dto.getRecomendacaoIntakeMax() != null) stats.setRecomendacaoIntakeMax(dto.getRecomendacaoIntakeMax());
+        if (dto.getIntervaloRecomendado() != null) stats.setIntervaloRecomendado(dto.getIntervaloRecomendado());
+        if (dto.getSodioRecomendado() != null) stats.setSodioRecomendado(dto.getSodioRecomendado());
+
+        stats.setAtualizadoEm(java.time.LocalDateTime.now());
+
+        StatsSessao saved = statsSessaoRepository.save(stats);
+        return convertToDTO(saved);
+    }
+
+    /**
      * Converte uma entidade StatsSessao em DTO.
      */
     private StatsSessaoDTO convertToDTO(StatsSessao stats) {

@@ -181,4 +181,26 @@ class HidraTrackApiClient {
       throw 'Erro na conexão: $e';
     }
   }
+
+  /// Atualiza (salva) os stats de uma sessão (edições manuais do usuário)
+  static Future<Map<String, dynamic>> atualizarStats({
+    required int sessaoId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/sessoes/$sessaoId/stats'),
+        headers: _headers,
+        body: jsonEncode(body),
+      ).timeout(timeout);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw 'Erro ao atualizar stats: ${response.statusCode}';
+      }
+    } catch (e) {
+      throw 'Erro na conexão: $e';
+    }
+  }
 }

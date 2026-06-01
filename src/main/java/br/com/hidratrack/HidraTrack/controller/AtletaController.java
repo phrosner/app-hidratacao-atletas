@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/atletas")
@@ -215,11 +216,20 @@ public class AtletaController {
             // TODO: Implementar busca real no banco de dados
             // TODO: Extrair userId do token
             
-            Map<String, Object>[] consumos = {
-                Map.of("dataHora", LocalDateTime.now().minusHours(3), "mlConsumidos", 500),
-                Map.of("dataHora", LocalDateTime.now().minusHours(2), "mlConsumidos", 400),
-                Map.of("dataHora", LocalDateTime.now().minusHours(1), "mlConsumidos", 300),
-            };
+            List<Map<String, Object>> consumos = List.of(
+                Map.of(
+                    "dataHora", LocalDateTime.now().minusHours(3),
+                    "mlConsumidos", 500
+                ),
+                Map.of(
+                    "dataHora", LocalDateTime.now().minusHours(2),
+                    "mlConsumidos", 400
+                ),
+                Map.of(
+                    "dataHora", LocalDateTime.now().minusHours(1),
+                    "mlConsumidos", 300
+                )
+            );
             
             return ResponseEntity.ok(consumos);
         } catch (Exception e) {

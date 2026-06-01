@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Servicos/hidratrack_api_client.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 
 class TelaTaxaMedia extends StatefulWidget {
   const TelaTaxaMedia({super.key});
@@ -21,11 +24,150 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
   static const _text = Color(0xFF222222);
   static const _muted = Color(0xFF6B6B6B);
 
-  double _sweatRate = 1.85;
-  double _waterLossLiters = 2.42;
-  double _weightVariation = -1.8;
-  int _recommendedMlHour = 750;
+  late Future<Map<String, dynamic>> _statsFuture;
+  late Future<List<_PerfPoint>> _performanceFuture;
+  int? _lastSessaoId;
 
+  // Local temporary values while loading
+  static const double _initialDouble = 0.0;
+  static const int _initialInt = 0;
+
+  // Simple local performance point model
+  // (kept minimal to avoid adding cross-file dependencies)
+  
+  @override
+  void initState() {
+    super.initState();
+    _statsFuture = _loadLastSessionStats();
+    _performanceFuture = _loadLastSessionPerformance();
+  }
+
+  Future<Map<String, dynamic>> _loadLastSessionStats() async {
+    try {
+      int atletaId;
+      try {
+        atletaId = await AtletaService.obterAtletaIdAutenticado();
+      } catch (_) {
+        atletaId = AuthStorage.userId ?? 1;
+      }
+
+      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(atletaId);
+      if (sessoes.isEmpty) return {};
+
+      // We'll average stats across the last up to 8 sessions
+      final limit = sessoes.length < 8 ? sessoes.length : 8;
+      double sumaTaxa = 0.0;
+      double sumaPerda = 0.0;
+      double sumaVariacao = 0.0;
+      int sumaRecMax = 0;
+      int count = 0;
+      Map<String, dynamic>? lastSessaoFull;
+
+      for (var i = 0; i < limit; i++) {
+        final s = sessoes[i];
+        final id = s['id'];
+        if (id == null) continue;
+        final sessao = await HidraTrackApiClient.obterSessao(id);
+        lastSessaoFull = sessao;
+        // store the most recent sessao id for save operations
+        if (_lastSessaoId == null) {
+          try {
+            _lastSessaoId = (sessao['id'] as int?) ?? (sessao['id'] as num?)?.toInt();
+          } catch (_) {}
+        }
+
+        Map<String, dynamic> st = {};
+        try {
+          st = await HidraTrackApiClient.obterStats(id);
+        } catch (_) {}
+
+        final taxa = (st['taxaSudoroseMedia'] as num?)?.toDouble();
+        final perda = (st['perdaLiquidoAjustada'] as num?)?.toDouble();
+        final variacao = (st['variacaoSudorese'] as num?)?.toDouble();
+        final recMax = (st['recomendacaoIntakeMax'] as num?)?.toInt();
+
+        if (taxa != null) { sumaTaxa += taxa; }
+        if (perda != null) { sumaPerda += perda; }
+        if (variacao != null) { sumaVariacao += variacao; }
+        if (recMax != null) { sumaRecMax += recMax; }
+
+        count++;
+      }
+
+      final combined = <String, dynamic>{};
+      if (count > 0) {
+        combined['taxaSudoroseMedia'] = sumaTaxa / count;
+        combined['perdaLiquidoAjustada'] = sumaPerda / count;
+        combined['variacaoSudorese'] = sumaVariacao / count;
+        combined['recomendacaoIntakeMax'] = (sumaRecMax / count).round();
+      }
+
+      // Add last session contextual values (temperature, humidity, intensidade)
+      if (lastSessaoFull != null) {
+        combined['temperaturaAmbiente'] = lastSessaoFull['temperaturaAmbiente'];
+        combined['umidadeRelativa'] = lastSessaoFull['umidadeRelativa'];
+        combined['intensidade'] = lastSessaoFull['intensidade'] ?? 'ALTA';
+        // ensure lastSessaoId is also set from the last session fetched
+        try {
+          _lastSessaoId = (lastSessaoFull['id'] as int?) ?? (lastSessaoFull['id'] as num?)?.toInt() ?? _lastSessaoId;
+        } catch (_) {}
+      }
+
+      return combined;
+    } catch (e) {
+      print('Erro ao carregar stats (TelaTaxaMedia): $e');
+      return {};
+    }
+  }
+
+  Future<List<_PerfPoint>> _loadLastSessionPerformance() async {
+    try {
+      int atletaId;
+      try {
+        atletaId = await AtletaService.obterAtletaIdAutenticado();
+      } catch (_) {
+        atletaId = AuthStorage.userId ?? 1;
+      }
+
+      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(atletaId);
+      if (sessoes.isEmpty) return _defaultPerformanceData();
+
+      final lastSessao = sessoes.first;
+      final sessao = await HidraTrackApiClient.obterSessao(lastSessao['id']);
+      final metricas = (sessao['metricas'] as List<dynamic>?) ?? [];
+
+      if (metricas.isEmpty) return _defaultPerformanceData();
+
+      final maxTaxa = 1.92;
+      // Sort metricas by tempoDecorridoMinutos
+      metricas.sort((a, b) {
+        final ta = a['tempoDecorridoMinutos'] as int? ?? 0;
+        final tb = b['tempoDecorridoMinutos'] as int? ?? 0;
+        return ta.compareTo(tb);
+      });
+
+      return metricas.map((m) {
+        final tempo = m['tempoDecorridoMinutos'] as int? ?? 0;
+        final taxa = (m['taxaSudorose'] as num?)?.toDouble() ?? 0.0;
+        return _PerfPoint(time: '${tempo} MIN', value: (taxa / maxTaxa).clamp(0, 1).toDouble());
+      }).toList();
+    } catch (e) {
+      print('Erro ao carregar performance (TelaTaxaMedia): $e');
+      return _defaultPerformanceData();
+    }
+  }
+
+  List<_PerfPoint> _defaultPerformanceData() {
+    return [
+      _PerfPoint(time: '0 MIN', value: 0.6),
+      _PerfPoint(time: '30 MIN', value: 0.75),
+      _PerfPoint(time: '60 MIN', value: 0.92),
+      _PerfPoint(time: '90 MIN', value: 0.88),
+    ];
+  }
+
+  
+ 
   void _showAction(BuildContext context, String message) {
     HapticFeedback.selectionClick();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -154,30 +296,72 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildTopBar(),
-                      const SizedBox(height: 20),
-                      _buildSweatRateCard(),
-                      const SizedBox(height: 14),
-                      _buildPerformanceCard(),
-                      const SizedBox(height: 14),
-                      _buildMetricsGrid(),
-                      const SizedBox(height: 14),
-                      _buildRepositionPlan(),
-                      const SizedBox(height: 20),
-                      _buildPrimaryButton(context),
-                      const SizedBox(height: 12),
-                      _buildSecondaryButton(context),
-                      const SizedBox(height: 12),
-                    ]),
-                  ),
-                ),
-              ],
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: _statsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError || snapshot.data == null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Erro ao carregar dados'),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => setState(() {
+                            _statsFuture = _loadLastSessionStats();
+                            _performanceFuture = _loadLastSessionPerformance();
+                          }),
+                          child: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final stats = snapshot.data!;
+
+                // extract values
+                final sweatRate = (stats['taxaSudoroseMedia'] as num?)?.toDouble() ?? _initialDouble;
+                final waterLoss = (stats['perdaLiquidoAjustada'] as num?)?.toDouble() ?? _initialDouble;
+                final variation = (stats['variacaoSudorese'] as num?)?.toDouble() ?? _initialDouble;
+                final recommended = (stats['recomendacaoIntakeMax'] as num?)?.toInt() ?? _initialInt;
+
+                return CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _buildTopBar(),
+                          const SizedBox(height: 20),
+                          _buildSweatRateCard(sweatRate, stats),
+                          const SizedBox(height: 14),
+                          FutureBuilder<List<_PerfPoint>>(
+                            future: _performanceFuture,
+                            builder: (c, perfSnap) {
+                              final perf = perfSnap.data ?? _defaultPerformanceData();
+                              return _buildPerformanceCard(perf);
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          _buildMetricsGrid(waterLoss, variation, recommended),
+                          const SizedBox(height: 14),
+                          _buildRepositionPlan(recommended),
+                          const SizedBox(height: 20),
+                          _buildPrimaryButton(context, sweatRate, waterLoss, variation, recommended),
+                          const SizedBox(height: 12),
+                          _buildSecondaryButton(context),
+                          const SizedBox(height: 12),
+                        ]),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -192,7 +376,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
     );
   }
 
-  Widget _buildSweatRateCard() {
+  Widget _buildSweatRateCard(double sweatRate, Map<String, dynamic> stats) {
     return Container(
       width: double.infinity,
       height: 148,
@@ -222,8 +406,12 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
                 tooltip: 'Editar taxa',
                 onPressed: () => _editarNumero(
                   titulo: 'Editar taxa de sudorese',
-                  valorAtual: _sweatRate,
-                  aoSalvar: (valor) => _sweatRate = valor,
+                  valorAtual: sweatRate,
+                  aoSalvar: (valor) => setState(() {
+                    // after editing, refresh stats from backend
+                    _statsFuture = _loadLastSessionStats();
+                    _performanceFuture = _loadLastSessionPerformance();
+                  }),
                 ),
               ),
             ],
@@ -234,7 +422,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _sweatRate.toStringAsFixed(2),
+                sweatRate.toStringAsFixed(2),
                 style: const TextStyle(
                   color: _lime,
                   fontSize: 50,
@@ -264,7 +452,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildPill('INTENSIDADE ALTA', _lime, Colors.white),
+              _buildPill((stats['intensidade'] as String?)?.toUpperCase() ?? 'INTENSIDADE', _lime, Colors.white),
               const SizedBox(width: 10),
               _buildPill('21 C / 65% UR', _surfaceLight, _text),
             ],
@@ -317,7 +505,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
     );
   }
 
-  Widget _buildPerformanceCard() {
+  Widget _buildPerformanceCard(List<_PerfPoint> perfData) {
     return Container(
       height: 218,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -353,8 +541,8 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
           Expanded(
             child: CustomPaint(
               painter: _PerformancePainter(
-                intensity: [42, 54, 49, 64, 58, 73, 44, 38, 79, 68],
-                hydration: [39, 46, 52, 50, 61, 55, 46, 59, 81, 43],
+                intensity: perfData.map((p) => p.value * 100).toList(),
+                hydration: perfData.map((p) => p.value * 100).toList(),
                 cyan: _cyan,
                 lime: _lime,
                 grid: Color(0xFF2B2B2B),
@@ -377,18 +565,18 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
     );
   }
 
-  Widget _buildMetricsGrid() {
+  Widget _buildMetricsGrid(double waterLossLiters, double weightVariation, int recommendedMlHour) {
     return Row(
       children: [
         Expanded(
           child: _MetricCard(
             title: 'PERDA AJUSTADA',
-            value: '${_waterLossLiters.toStringAsFixed(2)} L',
+            value: '${waterLossLiters.toStringAsFixed(2)} L',
             accent: _text,
             onEdit: () => _editarNumero(
               titulo: 'Editar perda ajustada',
-              valorAtual: _waterLossLiters,
-              aoSalvar: (valor) => _waterLossLiters = valor,
+              valorAtual: waterLossLiters,
+              aoSalvar: (valor) => setState(() {}),
             ),
           ),
         ),
@@ -396,13 +584,13 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
         Expanded(
           child: _MetricCard(
             title: 'VARIACAO %',
-            value: '${_weightVariation.toStringAsFixed(1)}%',
+            value: '${weightVariation.toStringAsFixed(1)}%',
             accent: _lime,
             highlighted: true,
             onEdit: () => _editarNumero(
               titulo: 'Editar variacao',
-              valorAtual: _weightVariation,
-              aoSalvar: (valor) => _weightVariation = valor,
+              valorAtual: weightVariation,
+              aoSalvar: (valor) => setState(() {}),
             ),
           ),
         ),
@@ -410,8 +598,8 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
     );
   }
 
-  Widget _buildRepositionPlan() {
-    final doseMl = (_recommendedMlHour / 4).round();
+  Widget _buildRepositionPlan(int recommendedMlHour) {
+    final doseMl = (recommendedMlHour / 4).round();
     final rows = [
       ('00:15', '$doseMl ml', 'Inicio da reposicao'),
       ('00:30', '$doseMl ml', 'Manter ritmo'),
@@ -461,8 +649,12 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
                 background: Colors.white,
                 onPressed: () => _editarInteiro(
                   titulo: 'Editar recomendacao horaria',
-                  valorAtual: _recommendedMlHour,
-                  aoSalvar: (valor) => _recommendedMlHour = valor,
+                  valorAtual: recommendedMlHour,
+                  aoSalvar: (valor) => setState(() {
+                    // refresh to reflect any changes
+                    _statsFuture = _loadLastSessionStats();
+                    _performanceFuture = _loadLastSessionPerformance();
+                  }),
                 ),
               ),
             ],
@@ -482,7 +674,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${_recommendedMlHour}ml',
+                '${recommendedMlHour}ml',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 30,
@@ -567,12 +759,37 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
     );
   }
 
-  Widget _buildPrimaryButton(BuildContext context) {
+  Widget _buildPrimaryButton(BuildContext context, double sweatRate, double waterLossLiters, double weightVariation, int recommendedMlHour) {
     return SizedBox(
       width: double.infinity,
       height: 58,
       child: FilledButton.icon(
-        onPressed: () => _showAction(context, 'Resultado salvo com sucesso'),
+        onPressed: () async {
+          if (_lastSessaoId == null) {
+            _showAction(context, 'Sessão não encontrada para salvar');
+            return;
+          }
+
+          final body = {
+            'taxaSudoroseMedia': sweatRate,
+            'perdaLiquidoAjustada': waterLossLiters,
+            'perdaLiquidoTotal': (waterLossLiters + 0.0),
+            'variacaoSudorese': weightVariation,
+            'recomendacaoIntakeMax': recommendedMlHour,
+            'recomendacaoIntakeMin': (recommendedMlHour - 200).clamp(0, recommendedMlHour),
+          };
+
+          try {
+            await HidraTrackApiClient.atualizarStats(sessaoId: _lastSessaoId!, body: body);
+            setState(() {
+              _statsFuture = _loadLastSessionStats();
+              _performanceFuture = _loadLastSessionPerformance();
+            });
+            _showAction(context, 'Resultado salvo com sucesso');
+          } catch (e) {
+            _showAction(context, 'Falha ao salvar: $e');
+          }
+        },
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
           foregroundColor: Colors.white,
@@ -877,6 +1094,14 @@ class _AxisLabel extends StatelessWidget {
       ),
     );
   }
+}
+
+
+class _PerfPoint {
+  final String time;
+  final double value;
+  _PerfPoint({required this.time, required this.value});
+
 }
 
 class _PerformancePainter extends CustomPainter {

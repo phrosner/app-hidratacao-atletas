@@ -121,4 +121,21 @@ public class SessaoTreinoController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    /**
+     * Atualiza os stats calculados de uma sessão (permite salvar edições manuais).
+     * PUT /api/sessoes/{sessaoId}/stats
+     */
+    @PutMapping("/{sessaoId}/stats")
+    public ResponseEntity<StatsSessaoDTO> atualizarStats(@PathVariable Long sessaoId,
+                                                         @RequestBody StatsSessaoDTO dto) {
+        try {
+            StatsSessaoDTO updated = statsService.atualizarStats(sessaoId, dto);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
 }

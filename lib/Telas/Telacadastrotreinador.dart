@@ -88,6 +88,18 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
     return 'Erro inesperado';
   }
 
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: _lime,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _salvarCadastro() async {
     final nome = _nomeController.text.trim();
     final email = _emailController.text.trim();
@@ -133,6 +145,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
           'email': email,
           'usuario': email,
           'senha': senha,
+          'nascimento': dataNascimento,
           'tipoUsuario': 'TREINADOR',
           'ativo': true,
         }),
