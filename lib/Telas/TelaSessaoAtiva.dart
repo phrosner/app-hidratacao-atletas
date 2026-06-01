@@ -98,7 +98,13 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-    Navigator.of(context).pushReplacementNamed(AppRotas.posSessao);
+    Navigator.of(context).pushReplacementNamed(
+      AppRotas.posSessao,
+      arguments: {
+        'totalMl': _totalMl,
+        'durationMinutes': _elapsed.inMinutes,
+      },
+    );
   }
 
   String _formatElapsed(Duration duration) {

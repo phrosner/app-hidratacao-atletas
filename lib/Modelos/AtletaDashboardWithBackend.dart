@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Telas/TeladashboardAtleta.dart' as atleta_dashboard;
+import 'package:http/http.dart' as http;
+import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
+import 'package:hidratrack/Servicos/hidratrack_api_client.dart';
+import 'package:hidratrack/Telas/TeladashboardAtleta.dart' as atleta_dashboard;
 
 class TelaDashboardAtletaComBackend extends StatefulWidget {
   final String? tokenAtleta;
@@ -34,14 +39,127 @@ class _TelaDashboardAtletaComBackendState
             ? AuthStorage.token
             : '';
 
-    _dashboardFuture = AtletaService.obterDashboardAtleta(token: token)
-        .then(_mapBackendToDashboardData)
-        .catchError((e) {
+    _dashboardFuture = _loadDashboardData(token);
+  }
+
+  Future<atleta_dashboard.AtletaDashboardData> _loadDashboardData(
+      String token) async {
+    try {
+      final backendData = await AtletaService.obterDashboardAtleta(token: token);
+      final temperaturaDashboard =
+          _parseDouble(backendData['temperatura'], 0.0);
+      final climaDashboard =
+          backendData['clima']?.toString().trim() ?? '';
+      final climaDashboardSemDados = climaDashboard.isEmpty ||
+          climaDashboard.toLowerCase() == 'sem informação' ||
+          climaDashboard.toLowerCase() == 'não informado' ||
+          climaDashboard.toLowerCase() == 'nao informado';
+      ClimaDados? clima;
+
+      if (temperaturaDashboard > 0 || !climaDashboardSemDados) {
+        clima = ClimaDados(
+          temperatura: temperaturaDashboard,
+          umidade: 0,
+          condicao: climaDashboardSemDados ? 'Sem informação' : climaDashboard,
+        );
+      }
+
+      if (clima == null) {
+        clima = await _loadClimaDados();
+      }
+      if (clima == null) {
+        clima = await _loadCurrentWeatherByIp();
+      }
+
+      return _mapBackendToDashboardData(backendData, clima);
+    } catch (e) {
       setState(() {
         _erro = 'Erro ao carregar dados: $e';
       });
-      throw e;
-    });
+      rethrow;
+    }
+  }
+
+  Future<ClimaDados?> _loadClimaDados() async {
+    var atletaId = AuthStorage.userId;
+    if (atletaId == null) {
+      atletaId = await _resolveAtletaId();
+    }
+    if (atletaId == null) return null;
+
+    try {
+      final sessoes = await HidraTrackApiClient.obterSessoesAtleta(atletaId);
+      if (sessoes.isEmpty) return null;
+
+      final sessionIdValue = sessoes.first['id'];
+      final sessionId = sessionIdValue is num
+          ? sessionIdValue.toInt()
+          : int.tryParse(sessionIdValue?.toString() ?? '');
+      if (sessionId == null) return null;
+
+      final lastSessao = await HidraTrackApiClient.obterSessao(sessionId);
+      final temperatura =
+          (lastSessao['temperaturaAmbiente'] as num?)?.toDouble();
+      final umidade = (lastSessao['umidadeRelativa'] as num?)?.toInt();
+      if (temperatura == null || temperatura == 0) return null;
+
+      return ClimaDados(
+        temperatura: temperatura,
+        umidade: umidade ?? 0,
+        condicao: lastSessao['condicao']?.toString() ?? 'Ambiente',
+      );
+    } catch (e) {
+      print('Erro ao carregar clima do atleta: $e');
+      return null;
+    }
+  }
+
+  Future<ClimaDados?> _loadCurrentWeatherByIp() async {
+    try {
+      final geoResponse = await http
+          .get(Uri.parse('https://geolocation-db.com/json/'))
+          .timeout(const Duration(seconds: 8));
+      if (geoResponse.statusCode != 200) return null;
+
+      final geoJson = jsonDecode(geoResponse.body);
+      final latitude = (geoJson['latitude'] as num?)?.toDouble();
+      final longitude = (geoJson['longitude'] as num?)?.toDouble();
+      if (latitude == null || longitude == null) return null;
+
+      final weatherResponse = await http.get(Uri.parse(
+              'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true&temperature_unit=celsius'))
+          .timeout(const Duration(seconds: 8));
+      if (weatherResponse.statusCode != 200) return null;
+
+      final weatherJson = jsonDecode(weatherResponse.body);
+      final current = weatherJson['current_weather'];
+      if (current == null) return null;
+
+      final temperature = (current['temperature'] as num?)?.toDouble();
+      final weatherCode = (current['weathercode'] as int?) ?? -1;
+      if (temperature == null) return null;
+
+      return ClimaDados(
+        temperatura: temperature,
+        umidade: 0,
+        condicao: _describeWeatherCode(weatherCode),
+      );
+    } catch (e) {
+      print('Erro ao carregar clima atual por IP: $e');
+      return null;
+    }
+  }
+
+  String _describeWeatherCode(int code) {
+    if (code == 0) return 'Ensolarado';
+    if (code == 1 || code == 2) return 'Parcialmente nublado';
+    if (code == 3) return 'Nublado';
+    if (code == 45 || code == 48) return 'Neblina';
+    if (code >= 51 && code <= 67) return 'Chuva leve';
+    if (code >= 71 && code <= 77) return 'Neve';
+    if (code >= 80 && code <= 82) return 'Chuva';
+    if (code >= 95 && code <= 99) return 'Tempestade';
+    return 'Clima atual';
   }
 
   Future<void> _recarregarDados() async {
@@ -53,7 +171,7 @@ class _TelaDashboardAtletaComBackendState
   }
 
   atleta_dashboard.AtletaDashboardData _mapBackendToDashboardData(
-      Map<String, dynamic> data) {
+      Map<String, dynamic> data, ClimaDados? clima) {
     final nomeAtleta = (data['nomeAtleta'] ?? 'Atleta').toString();
     final taxaSuor = _parseDouble(data['taxaSuor'], 1.0);
     final hidratacaoRecomendada =
@@ -76,7 +194,27 @@ class _TelaDashboardAtletaComBackendState
       averageRate: consumoMedio,
       variationPercent: variationPercent,
       hasHydrationAlert: percentualConsumido < 0.5,
+      clima: clima,
     );
+  }
+
+  Future<int?> _resolveAtletaId() async {
+    final token = AuthStorage.token;
+    if (token.isEmpty) return null;
+
+    try {
+      final perfil = await AtletaService.obterPerfilAtleta(token: token);
+      final idValue = perfil['id'] ?? perfil['atletaId'] ?? perfil['userId'];
+      final atletaId = idValue is num
+          ? idValue.toInt()
+          : int.tryParse(idValue?.toString() ?? '');
+      if (atletaId != null) {
+        AuthStorage.userId = atletaId;
+      }
+      return atletaId;
+    } catch (_) {
+      return null;
+    }
   }
 
   double _parseDouble(dynamic value, double fallback) {

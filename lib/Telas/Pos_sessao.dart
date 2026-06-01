@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:http/http.dart' as http;
 
 class PosSessao extends StatefulWidget {
   const PosSessao({super.key});
@@ -17,9 +22,16 @@ class _PosSessaoState extends State<PosSessao> {
   static const _text = Color(0xFF222222);
   static const _muted = Color(0xFF6B6B6B);
 
+  int _sessionTotalMl = 0;
+  int? _sessionDurationMinutes;
+  double? _temperaturaAmbiente;
+  bool _temperaturaCarregando = true;
+  bool _temperaturaFalha = false;
+
   final TextEditingController _pesoFinalController = TextEditingController(
     text: '80.5',
   );
+  final TextEditingController _temperaturaController = TextEditingController();
 
   double _pesoInicial = 81.2;
   int _rpe = 9;
@@ -52,17 +64,90 @@ class _PosSessaoState extends State<PosSessao> {
     _didLoadArgs = true;
 
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is double) {
+    if (args is Map<String, dynamic>) {
+      _sessionTotalMl = args['totalMl'] as int? ?? _sessionTotalMl;
+      _sessionDurationMinutes = args['durationMinutes'] as int?;
+      final pesoInicialArg = args['pesoInicial'];
+      if (pesoInicialArg is double) {
+        _pesoInicial = pesoInicialArg;
+      } else if (pesoInicialArg is String) {
+        _pesoInicial = double.tryParse(pesoInicialArg.replaceAll(',', '.')) ?? _pesoInicial;
+      }
+    } else if (args is double) {
       _pesoInicial = args;
     } else if (args is String) {
       _pesoInicial = double.tryParse(args.replaceAll(',', '.')) ?? _pesoInicial;
     }
+
+    _carregarTemperaturaAmbiente();
   }
 
   @override
   void dispose() {
     _pesoFinalController.dispose();
+    _temperaturaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _carregarTemperaturaAmbiente() async {
+    try {
+      double? temperature;
+      bool backendRequested = false;
+
+      if (AuthStorage.token.isNotEmpty) {
+        backendRequested = true;
+        final dashboardData = await AtletaService.obterDashboardAtleta(
+          token: AuthStorage.token,
+        );
+        final tempFromDashboard = dashboardData['temperatura'];
+        temperature = tempFromDashboard is num
+            ? tempFromDashboard.toDouble()
+            : double.tryParse(tempFromDashboard?.toString() ?? '');
+      }
+
+      if (temperature == null || temperature <= 0) {
+        if (backendRequested) {
+          throw Exception('Temperatura não disponível no dashboard. Preencha manualmente.');
+        }
+
+        final geoResponse = await http
+            .get(Uri.parse('https://geolocation-db.com/json/'))
+            .timeout(const Duration(seconds: 8));
+        if (geoResponse.statusCode != 200) throw Exception('Geolocation failed');
+
+        final geoJson = jsonDecode(geoResponse.body);
+        final latitude = (geoJson['latitude'] as num?)?.toDouble();
+        final longitude = (geoJson['longitude'] as num?)?.toDouble();
+        if (latitude == null || longitude == null) throw Exception('Location missing');
+
+        final weatherResponse = await http
+            .get(Uri.parse(
+                'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true&temperature_unit=celsius'))
+            .timeout(const Duration(seconds: 8));
+        if (weatherResponse.statusCode != 200) throw Exception('Weather failed');
+
+        final weatherJson = jsonDecode(weatherResponse.body);
+        final current = weatherJson['current_weather'];
+        if (current == null) throw Exception('Weather data missing');
+
+        temperature = (current['temperature'] as num?)?.toDouble();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _temperaturaAmbiente = temperature;
+        _temperaturaController.text = temperature?.toStringAsFixed(1) ?? '';
+        _temperaturaCarregando = false;
+        _temperaturaFalha = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _temperaturaCarregando = false;
+        _temperaturaFalha = true;
+      });
+      debugPrint('Erro ao carregar temperatura ambiente: $error');
+    }
   }
 
   void _toggleSintoma(String sintoma) {
@@ -83,7 +168,7 @@ class _PosSessaoState extends State<PosSessao> {
     });
   }
 
-  void _salvarSessao() {
+  Future<void> _salvarSessao() async {
     final pesoFinal =
         double.tryParse(_pesoFinalController.text.replaceAll(',', '.')) ?? 0;
 
@@ -96,15 +181,85 @@ class _PosSessaoState extends State<PosSessao> {
       criadoEm: DateTime.now(),
     );
 
-    SessaoStore.salvar(registro);
+    int atletaId;
+    try {
+      atletaId = await AtletaService.obterAtletaIdAutenticado();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Atleta não autenticado: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sessao salva com sucesso'),
-        backgroundColor: _lime,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      if (_temperaturaCarregando) {
+        await _carregarTemperaturaAmbiente();
+      }
+
+      if (_temperaturaController.text.trim().isEmpty) {
+        await _carregarTemperaturaAmbiente();
+      }
+
+      final temperaturaAmbienteText =
+          _temperaturaController.text.replaceAll(',', '.').trim();
+      final temperaturaAmbiente = double.tryParse(temperaturaAmbienteText) ??
+          _temperaturaAmbiente;
+      if (temperaturaAmbiente == null) {
+        throw Exception('Temperatura ambiente não carregada. Preencha manualmente.');
+      }
+
+      final sessaoCriada = await AtletaService.criarSessao(
+        atletaId: atletaId,
+        temperaturaAmbiente: temperaturaAmbiente,
+        umidadeRelativa: 65,
+      );
+
+      final int sessaoId = sessaoCriada['id'] is num
+          ? (sessaoCriada['id'] as num).toInt()
+          : int.tryParse(sessaoCriada['id']?.toString() ?? '') ?? 0;
+
+      if (sessaoId <= 0) {
+        throw Exception('ID da sessão inválido');
+      }
+
+      if ((_sessionDurationMinutes ?? 0) > 0) {
+        await AtletaService.finalizarSessao(
+          sessaoId: sessaoId,
+          durationMinutos: _sessionDurationMinutes!,
+        );
+      }
+
+      if (_sessionTotalMl > 0) {
+        await AtletaService.registrarConsumoSessao(
+          sessaoId: sessaoId,
+          quantidadeMl: _sessionTotalMl,
+          tempoDecorridoMinutos: _sessionDurationMinutes,
+        );
+      }
+
+      SessaoStore.salvar(registro);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessao salva com sucesso'),
+          backgroundColor: _lime,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar sessão: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     Navigator.of(context).pushReplacementNamed(AppRotas.dashboardAtleta);
   }
@@ -133,6 +288,8 @@ class _PosSessaoState extends State<PosSessao> {
                       _buildHeader(),
                       const SizedBox(height: 18),
                       _buildWeightCard(),
+                      const SizedBox(height: 14),
+                      _buildTemperatureCard(),
                       const SizedBox(height: 14),
                       _buildSymptomsCard(),
                       const SizedBox(height: 14),
@@ -279,6 +436,61 @@ class _PosSessaoState extends State<PosSessao> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemperatureCard() {
+    return _buildPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPanelTitle('TEMPERATURA DO AMBIENTE', trailing: Icons.thermostat_outlined),
+          const SizedBox(height: 18),
+          const Text(
+            'A temperatura será usada para ajustar a recomendação da sessão.',
+            style: TextStyle(
+              color: _muted,
+              fontSize: 10,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (_temperaturaCarregando)
+            const Text(
+              'Carregando temperatura ambiente...',
+              style: TextStyle(color: _muted, fontSize: 12),
+            )
+          else if (_temperaturaFalha)
+            const Text(
+              'Falha ao carregar temperatura. Preencha manualmente abaixo.',
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            )
+          else
+            const SizedBox.shrink(),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _temperaturaController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              fillColor: Colors.white,
+              filled: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 12,
+              ),
+              hintText: 'Temperatura em °C',
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+                borderSide: const BorderSide(color: _lime),
+              ),
+            ),
           ),
         ],
       ),

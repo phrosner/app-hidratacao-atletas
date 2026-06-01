@@ -135,6 +135,18 @@ public class SessaoTreinoService {
                 .collect(Collectors.toList());
     }
 
+    public List<SessaoTreinoDTO> obterHistoricoPorAtleta(Long atletaId, Integer dias) {
+        final LocalDateTime limite = dias != null && dias > 0
+                ? LocalDateTime.now().minusDays(dias)
+                : null;
+
+        return sessaoRepository.findByAtletaIdOrderByDataInicioDesc(atletaId)
+                .stream()
+                .filter(sessao -> limite == null || !sessao.getDataInicio().isBefore(limite))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Obtém detalhes de uma sessão específica.
      */

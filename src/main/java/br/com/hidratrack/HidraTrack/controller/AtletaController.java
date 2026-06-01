@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/atletas")
@@ -113,6 +114,66 @@ public class AtletaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("erro", "Erro ao obter dashboard: " + e.getMessage()));
         }
+    }
+
+    /**
+     * Obter histórico de treino do atleta autenticado
+     */
+    @GetMapping("/historico")
+    public ResponseEntity<?> obterHistorico(
+            @RequestParam(required = false) Integer dias,
+            @RequestHeader("Authorization") String token) {
+        try {
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
+            if (usuarioLogado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("erro", "Token inválido ou não informado"));
+            }
+
+            final Long atletaId = usuarioLogado.get().getId();
+            final List<SessaoTreinoDTO> sessoes = sessaoTreinoService.obterHistoricoPorAtleta(atletaId, dias);
+
+            final List<Map<String, Object>> historico = sessoes.stream().map(sessao -> {
+                final double volumeLitros = sessao.getConsumos() == null
+                        ? 0.0
+                        : sessao.getConsumos().stream()
+                                .mapToDouble(c -> c.getQuantidadeMl() != null ? c.getQuantidadeMl() : 0.0)
+                                .sum() / 1000.0;
+
+                final Map<String, Object> item = new HashMap<>();
+                item.put("id", sessao.getId());
+                item.put("data", sessao.getDataInicio().toString());
+                item.put("tipoTreino", sessao.getStatus() != null
+                        ? formatTipoTreino(sessao.getStatus())
+                        : "Sessão de treino");
+                item.put("volumeLitros", Math.round(volumeLitros * 100.0) / 100.0);
+                item.put("icone", escolherIcone(sessao));
+                return item;
+            }).collect(Collectors.toList());
+
+            return ResponseEntity.ok(historico);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("erro", "Erro ao obter histórico: " + e.getMessage()));
+        }
+    }
+
+    private String formatTipoTreino(String status) {
+        return switch (status) {
+            case "CONCLUIDA" -> "Treino de Intervalo";
+            case "PAUSADA" -> "Treino parcial";
+            case "CANCELADA" -> "Treino cancelado";
+            default -> "Treino de sessão";
+        };
+    }
+
+    private String escolherIcone(SessaoTreinoDTO sessao) {
+        return switch (sessao.getStatus()) {
+            case "CONCLUIDA" -> "bolt";
+            case "PAUSADA" -> "access_time";
+            case "CANCELADA" -> "block";
+            default -> "bolt";
+        };
     }
 
     /**

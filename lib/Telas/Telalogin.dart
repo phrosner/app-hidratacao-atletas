@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
 import 'package:http/http.dart' as http;
@@ -123,6 +124,21 @@ class _TelaloginState extends State<Telalogin> {
           AuthStorage.token = token;
           AuthStorage.nome = nome;
           AuthStorage.tipoUsuario = tipo;
+
+          final idValue = data['userId'] ?? data['id'] ?? data['atletaId'];
+          if (idValue != null) {
+            AuthStorage.userId = idValue is num
+                ? idValue.toInt()
+                : int.tryParse(idValue.toString()) ?? AuthStorage.userId;
+          }
+
+          if (AuthStorage.userId == null) {
+            try {
+              AuthStorage.userId = await AtletaService.obterAtletaIdAutenticado();
+            } catch (_) {
+              // Não bloqueia o fluxo de login, mas mantém o token válido para requisições futuras.
+            }
+          }
         }
 
         ScaffoldMessenger.of(context).showSnackBar(

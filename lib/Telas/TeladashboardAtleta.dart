@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/app_rotas.dart';
 
 class TelaDashboardAtleta extends StatelessWidget {
@@ -270,8 +271,16 @@ class TelaDashboardAtleta extends StatelessWidget {
   }
 
   Widget _buildWeatherCard() {
+    final clima = data.clima;
+    final condicaoSemDados = clima.condicao.trim().isEmpty ||
+        clima.condicao.toLowerCase() == 'sem informação' ||
+        clima.condicao.toLowerCase() == 'não informado' ||
+        clima.condicao.toLowerCase() == 'nao informado';
+    final hasClima = clima.temperatura != 0 || clima.umidade != 0 ||
+        !condicaoSemDados;
+
     return Container(
-      height: 118,
+      height: 130,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surface,
@@ -291,69 +300,61 @@ class TelaDashboardAtleta extends StatelessWidget {
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Clima Local',
-                style: TextStyle(
-                  color: _muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.8,
-                ),
-              ),
-              const Spacer(),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.bottomLeft,
-                      child: Text(
-                        '31C',
-                        style: TextStyle(
-                          color: _text,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        'SP, BR - Seco',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.water_drop_outlined, color: _cyan, size: 14),
-                  const SizedBox(width: 5),
                   const Text(
-                    'UMIDADE 42%',
+                    'Clima Local',
                     style: TextStyle(
                       color: _muted,
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    hasClima
+                        ? '${clima.temperatura.toStringAsFixed(0)}°C'
+                        : '--°C',
+                    style: const TextStyle(
+                      color: _text,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    hasClima ? clima.condicao : 'Sem dados de clima',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
               ),
+              if (hasClima && clima.umidade > 0) ...[
+                Row(
+                  children: [
+                    Icon(Icons.water_drop_outlined, color: _cyan, size: 14),
+                    const SizedBox(width: 5),
+                    Text(
+                      'UMIDADE ${clima.umidade}%',
+                      style: const TextStyle(
+                        color: _muted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ],
@@ -474,6 +475,7 @@ class AtletaDashboardData {
     required this.variationLabel,
     required this.variationValue,
     required this.variationColor,
+    required this.clima,
     this.weeklyHydration = '88%',
   });
 
@@ -491,6 +493,7 @@ class AtletaDashboardData {
   final String variationLabel;
   final String variationValue;
   final Color variationColor;
+  final ClimaDados clima;
   final String weeklyHydration;
 
   factory AtletaDashboardData.fromHydrationMetrics({
@@ -502,6 +505,7 @@ class AtletaDashboardData {
     required double averageRate,
     required double variationPercent,
     bool hasHydrationAlert = true,
+    ClimaDados? clima,
   }) {
     final variationPositive = variationPercent >= 0;
     final variationString = variationPositive
@@ -527,6 +531,12 @@ class AtletaDashboardData {
       variationColor: variationPositive
           ? const Color(0xFFB32025)
           : const Color(0xFF8F171B),
+      clima: clima ??
+          ClimaDados(
+            temperatura: 0,
+            umidade: 0,
+            condicao: 'Sem informação',
+          ),
       weeklyHydration: '88%',
     );
   }
