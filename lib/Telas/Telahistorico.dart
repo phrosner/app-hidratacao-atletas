@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/app_rotas.dart';
-import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
 
 class TelaHistorico extends StatefulWidget {
   const TelaHistorico({super.key, this.atletaId = 1});
@@ -29,7 +29,6 @@ class _TelaHistoricoState extends State<TelaHistorico> {
   void initState() {
     super.initState();
     _sessoesFuture = HistoricoSessoesRepository.carregarPorAtleta(
-      atletaId: widget.atletaId,
       filtro: _filtro,
     );
   }
@@ -38,7 +37,6 @@ class _TelaHistoricoState extends State<TelaHistorico> {
     setState(() {
       _filtro = filtro;
       _sessoesFuture = HistoricoSessoesRepository.carregarPorAtleta(
-        atletaId: widget.atletaId,
         filtro: filtro,
       );
     });
@@ -73,7 +71,7 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                           const SizedBox(height: 28),
                           _buildFilters(),
                           const SizedBox(height: 28),
-                          _buildTrendCard(chartValues, media),
+                          _buildTrendCard(chartValues, media, sessoes),
                           const SizedBox(height: 24),
                           _buildSectionLabel('SESSOES ANTERIORES'),
                           const SizedBox(height: 12),
@@ -85,6 +83,8 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                                 child: CircularProgressIndicator(color: _lime),
                               ),
                             )
+                          else if (snapshot.hasError)
+                            _buildErrorState(snapshot.error.toString())
                           else if (sessoes.isEmpty)
                             _buildEmptyState()
                           else
@@ -144,7 +144,11 @@ class _TelaHistoricoState extends State<TelaHistorico> {
     );
   }
 
-  Widget _buildTrendCard(List<double> values, double media) {
+  Widget _buildTrendCard(
+    List<double> values,
+    double media,
+    List<SessaoHistorico> sessoes,
+  ) {
     return Container(
       height: 226,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
@@ -228,15 +232,12 @@ class _TelaHistoricoState extends State<TelaHistorico> {
             ),
           ),
           const SizedBox(height: 10),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _AxisLabel('01 MAI'),
-              _AxisLabel('08 MAI'),
-              _AxisLabel('15 MAI'),
-              _AxisLabel('22 MAI'),
-              _AxisLabel('HOJE'),
-            ],
+            children: _chartAxisLabels(
+              _filtro,
+              sessoes,
+            ).map((label) => _AxisLabel(label)).toList(),
           ),
         ],
       ),
@@ -336,6 +337,20 @@ class _TelaHistoricoState extends State<TelaHistorico> {
     );
   }
 
+  Widget _buildErrorState(String error) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'Erro ao carregar histórico: $error',
+        style: const TextStyle(color: _muted, fontSize: 12),
+      ),
+    );
+  }
+
   Widget _buildSectionLabel(String label) {
     return Text(
       label,
@@ -355,6 +370,44 @@ class _TelaHistoricoState extends State<TelaHistorico> {
         .toList()
         .reversed
         .toList();
+  }
+
+  List<String> _chartAxisLabels(String filtro, List<SessaoHistorico> sessoes) {
+    final now = DateTime.now();
+    final start = switch (filtro) {
+      '7 Dias' => now.subtract(const Duration(days: 7)),
+      '24 Dias' => now.subtract(const Duration(days: 24)),
+      _ =>
+        sessoes.isNotEmpty
+            ? sessoes.last.data
+            : now.subtract(const Duration(days: 28)),
+    };
+
+    final totalDays = now.difference(start).inDays;
+    final labels = List<String>.generate(5, (index) {
+      final date = start.add(Duration(days: ((totalDays * index) / 4).round()));
+      return index == 4 ? 'HOJE' : _formatChartLabel(date);
+    });
+
+    return labels;
+  }
+
+  String _formatChartLabel(DateTime date) {
+    const months = [
+      'JAN',
+      'FEV',
+      'MAR',
+      'ABR',
+      'MAI',
+      'JUN',
+      'JUL',
+      'AGO',
+      'SET',
+      'OUT',
+      'NOV',
+      'DEZ',
+    ];
+    return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]}';
   }
 
   Widget _buildBottomNav(BuildContext context) {
@@ -388,7 +441,7 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                 } else if (i == 2) {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed(AppRotas.statsAtleta);
+                  ).pushReplacementNamed(AppRotas.taxaMedia);
                 } else if (i == 3) {
                   Navigator.of(
                     context,
@@ -426,86 +479,28 @@ class _TelaHistoricoState extends State<TelaHistorico> {
 
 class HistoricoSessoesRepository {
   static Future<List<SessaoHistorico>> carregarPorAtleta({
-    required int atletaId,
     required String filtro,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 120));
+    final dias = filtro == '7 Dias'
+        ? 7
+        : filtro == '24 Dias'
+        ? 24
+        : null;
 
-    final sessoesSalvas = SessaoHidratacaoStore.sessoes.map((sessao) {
-      final resultado = sessao.resultado;
-      return SessaoHistorico(
-        atletaId: atletaId,
-        data: sessao.finalizadoEm,
-        titulo: sessao.inicio.modalidade,
-        subtitulo:
-            '${sessao.inicio.intensidade} - ${sessao.duracao.inMinutes} min',
-        sudoroseLitrosHora: resultado.taxaSudoreseLitrosHora,
-        icon: Icons.bolt,
-        accentColor: const Color(0xFFB32025),
-      );
-    }).toList();
-
-    final sessoes =
-        sessoesSalvas.isEmpty ? _mockSessoes(atletaId) : sessoesSalvas;
-
-    final limite = switch (filtro) {
-      '7 Dias' => DateTime.now().subtract(const Duration(days: 7)),
-      '24 Dias' => DateTime.now().subtract(const Duration(days: 24)),
-      _ => DateTime(1900),
-    };
-
-    return sessoes
-        .where((sessao) => sessao.atletaId == atletaId)
-        .where((sessao) => sessao.data.isAfter(limite))
-        .toList()
-      ..sort((a, b) => b.data.compareTo(a.data));
-  }
-
-  static List<SessaoHistorico> _mockSessoes(int atletaId) {
-    final now = DateTime.now();
-    return [
-      SessaoHistorico(
-        atletaId: atletaId,
-        data: now.subtract(const Duration(days: 1, hours: 2)),
-        titulo: 'Treino de',
-        subtitulo: 'Intervalo',
-        sudoroseLitrosHora: 2.45,
-        icon: Icons.bolt,
-        accentColor: const Color(0xFFB32025),
-      ),
-      SessaoHistorico(
-        atletaId: atletaId,
-        data: now.subtract(const Duration(days: 3, hours: 5)),
-        titulo: 'Ciclismo HIIT',
-        subtitulo: '',
-        sudoroseLitrosHora: 1.80,
-        icon: Icons.directions_bike,
-        accentColor: const Color(0xFF8F171B),
-      ),
-      SessaoHistorico(
-        atletaId: atletaId,
-        data: now.subtract(const Duration(days: 5, hours: 4)),
-        titulo: 'Forca',
-        subtitulo: 'Explosiva',
-        sudoroseLitrosHora: 0.95,
-        icon: Icons.fitness_center,
-        accentColor: const Color(0xFFB32025),
-      ),
-      SessaoHistorico(
-        atletaId: atletaId,
-        data: now.subtract(const Duration(days: 6, hours: 1)),
-        titulo: 'Natacao',
-        subtitulo: 'Endurance',
-        sudoroseLitrosHora: 1.20,
-        icon: Icons.pool,
-        accentColor: const Color(0xFF6B6B6B),
-      ),
-    ];
+    try {
+      final sessoesJson = await AtletaService.obterHistoricoAtleta(dias: dias);
+      return sessoesJson.map(SessaoHistorico.fromJson).toList()
+        ..sort((a, b) => b.data.compareTo(a.data));
+    } catch (e) {
+      debugPrint('Erro ao carregar histórico: $e');
+      return const [];
+    }
   }
 }
 
 class SessaoHistorico {
   const SessaoHistorico({
+    required this.id,
     required this.atletaId,
     required this.data,
     required this.titulo,
@@ -515,6 +510,53 @@ class SessaoHistorico {
     required this.accentColor,
   });
 
+  factory SessaoHistorico.fromJson(Map<String, dynamic> json) {
+    final iconName = json['icone']?.toString() ?? 'bolt';
+    return SessaoHistorico(
+      id: json['id'] is num
+          ? (json['id'] as num).toInt()
+          : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      atletaId: 0,
+      data: DateTime.tryParse(json['data']?.toString() ?? '') ?? DateTime.now(),
+      titulo: json['tipoTreino']?.toString() ?? 'Treino',
+      subtitulo: '',
+      sudoroseLitrosHora: (json['volumeLitros'] as num?)?.toDouble() ?? 0.0,
+      icon: _iconFromName(iconName),
+      accentColor: _accentColorFromName(iconName),
+    );
+  }
+
+  static IconData _iconFromName(String iconName) {
+    switch (iconName.toLowerCase()) {
+      case 'bike':
+        return Icons.directions_bike;
+      case 'pool':
+        return Icons.pool;
+      case 'fitness_center':
+      case 'fitness':
+        return Icons.fitness_center;
+      case 'access_time':
+        return Icons.access_time;
+      case 'block':
+        return Icons.block;
+      default:
+        return Icons.bolt;
+    }
+  }
+
+  static Color _accentColorFromName(String iconName) {
+    switch (iconName.toLowerCase()) {
+      case 'bike':
+        return const Color(0xFF8F171B);
+      case 'pool':
+      case 'fitness_center':
+        return const Color(0xFF6B6B6B);
+      default:
+        return const Color(0xFFB32025);
+    }
+  }
+
+  final int id;
   final int atletaId;
   final DateTime data;
   final String titulo;
@@ -615,8 +657,9 @@ class _SweatTrendPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (values.isEmpty) return;
 
-    final normalizedValues =
-        values.length == 1 ? [values.first, values.first] : values;
+    final normalizedValues = values.length == 1
+        ? [values.first, values.first]
+        : values;
     final maxValue = math.max(normalizedValues.reduce(math.max), 0.1);
     final minValue = normalizedValues.reduce(math.min);
     final range = math.max(maxValue - minValue, 0.1);

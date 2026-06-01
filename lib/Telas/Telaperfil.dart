@@ -25,8 +25,29 @@ class _TelaperfilState extends State<Telaperfil> {
   static const _codigos = ['HT-000001', 'HT-000002', 'HT-000003'];
   static const _idade = '24';
   static const _altura = '185';
+  static const _metaDiariaAgua = '2L de agua por dia';
   static const _email = 'vitorthompson@atleta.com';
   static const _senha = 'hidratrack24';
+
+  final TextEditingController _metaController = TextEditingController(
+    text: _metaDiariaAgua,
+  );
+
+  @override
+  void dispose() {
+    _metaController.dispose();
+    super.dispose();
+  }
+
+  void _salvarAlteracoes() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Alteracoes salvas com sucesso'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -243,7 +264,97 @@ class _TelaperfilState extends State<Telaperfil> {
             ),
           ],
         ),
+        const SizedBox(height: 14),
+        _buildLabel('QUADRO DE METAS'),
+        const SizedBox(height: 7),
+        _buildGoalCard(),
+        const SizedBox(height: 12),
+        _buildSaveChangesButton(),
       ],
+    );
+  }
+
+  Widget _buildGoalCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: _lime.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _lime.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.water_drop_outlined,
+              color: _lime,
+              size: 23,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'META DIARIA',
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _metaController,
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaveChangesButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: FilledButton.icon(
+        onPressed: _salvarAlteracoes,
+        style: FilledButton.styleFrom(
+          backgroundColor: _lime,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        icon: const Icon(Icons.save_outlined, size: 18),
+        label: const Text(
+          'SALVAR ALTERACOES',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
     );
   }
 

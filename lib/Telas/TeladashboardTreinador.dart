@@ -223,8 +223,9 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final horizontalPadding = constraints.maxWidth >= 600 ? 24.0 : 16.0;
-            final contentWidth =
-                constraints.maxWidth >= 760 ? 520.0 : double.infinity;
+            final contentWidth = constraints.maxWidth >= 760
+                ? 520.0
+                : double.infinity;
 
             return Align(
               alignment: Alignment.topCenter,

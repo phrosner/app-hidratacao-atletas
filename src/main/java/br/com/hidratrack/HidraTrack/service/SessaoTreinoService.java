@@ -7,6 +7,7 @@ import br.com.hidratrack.HidraTrack.dto.StatsSessaoDTO;
 import br.com.hidratrack.HidraTrack.model.SessaoTreino;
 import br.com.hidratrack.HidraTrack.model.MetricaSudorese;
 import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
+import br.com.hidratrack.HidraTrack.model.StatsSessao;
 import br.com.hidratrack.HidraTrack.model.Usuario;
 import br.com.hidratrack.HidraTrack.repository.SessaoTreinoRepository;
 import br.com.hidratrack.HidraTrack.repository.MetricaSudoroseRepository;
@@ -138,6 +139,20 @@ public class SessaoTreinoService {
     /**
      * Obtém detalhes de uma sessão específica.
      */
+    public List<SessaoTreinoDTO> obterHistoricoPorAtleta(Long atletaId, Integer dias) {
+        final LocalDateTime limite = dias != null && dias > 0
+                ? LocalDateTime.now().minusDays(dias)
+                : null;
+
+        return sessaoRepository.findByAtletaIdOrderByDataInicioDesc(atletaId)
+                .stream()
+                .filter(sessao -> limite == null
+                        || sessao.getDataInicio() == null
+                        || !sessao.getDataInicio().isBefore(limite))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     public SessaoTreinoDTO obterSessao(Long sessaoId) {
         Optional<SessaoTreino> sessaoOpt = sessaoRepository.findById(sessaoId);
         return sessaoOpt.map(this::convertToDTO).orElse(null);

@@ -1,12 +1,128 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 
-class TelaDashboardAtleta extends StatelessWidget {
-  const TelaDashboardAtleta({
+class AtletaDashboardData {
+  final String greetingTitle;
+  final double sweatRate;
+  final double recommendedIntakeLiters;
+  final double completedPercent;
+  final double averageRate;
+
+  AtletaDashboardData({
+    required this.greetingTitle,
+    required this.sweatRate,
+    required this.recommendedIntakeLiters,
+    required this.completedPercent,
+    required this.averageRate,
+  });
+
+  factory AtletaDashboardData.fromBackend(Map<String, dynamic> data) {
+    final nomeAtleta = data['nomeAtleta'] ?? 'Atleta';
+    return AtletaDashboardData(
+      greetingTitle: 'BOM TREINO, ${nomeAtleta.toString().toUpperCase()}!',
+      sweatRate: (data['taxaSuor'] ?? 0.0).toDouble(),
+      recommendedIntakeLiters: (data['hidratacaoRecomendada'] ?? 0.0)
+          .toDouble(),
+      completedPercent: ((data['percentualConsumido'] ?? 0) / 100).toDouble(),
+      averageRate: (data['consumoMedio'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
+class TelaDashboardAtletaComBackend extends StatefulWidget {
+  final String? tokenAtleta;
+
+  const TelaDashboardAtletaComBackend({super.key, this.tokenAtleta});
+
+  @override
+  State<TelaDashboardAtletaComBackend> createState() =>
+      _TelaDashboardAtletaComBackendState();
+}
+
+class _TelaDashboardAtletaComBackendState
+    extends State<TelaDashboardAtletaComBackend> {
+  late Future<AtletaDashboardData> _dashboardFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarDadosDashboard();
+  }
+
+  void _carregarDadosDashboard() {
+    final token = widget.tokenAtleta?.isNotEmpty == true
+        ? widget.tokenAtleta!
+        : AuthStorage.token.isNotEmpty
+        ? AuthStorage.token
+        : 'seu_token_aqui';
+    _dashboardFuture = AtletaService.obterDashboardAtleta(
+      token: token,
+    ).then((data) => AtletaDashboardData.fromBackend(data));
+  }
+
+  void _recarregarDados() {
+    setState(() {
+      _carregarDadosDashboard();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<AtletaDashboardData>(
+      future: _dashboardFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFFFFFFF),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFB32025)),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFFFFFFF),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Color(0xFFB32025),
+                    size: 64,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Erro ao carregar dashboard',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF222222), fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _recarregarDados,
+                    child: const Text('Tentar Novamente'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final data = snapshot.data!;
+        return TelaDashboardAtletaUI(data: data, onRefresh: _recarregarDados);
+      },
+    );
+  }
+}
+
+class TelaDashboardAtletaUI extends StatelessWidget {
+  const TelaDashboardAtletaUI({
     super.key,
     required this.data,
-    this.onStartSession,
+    required this.onRefresh,
   });
 
   static const _background = Color(0xFFFFFFFF);
@@ -18,7 +134,7 @@ class TelaDashboardAtleta extends StatelessWidget {
   static const _muted = Color(0xFF6B6B6B);
 
   final AtletaDashboardData data;
-  final VoidCallback? onStartSession;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +194,63 @@ class TelaDashboardAtleta extends StatelessWidget {
     );
   }
 
+  Widget _buildWeatherCard() {
+    return Container(
+      height: 118,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            top: -12,
+            child: Icon(
+              Icons.cloud_outlined,
+              color: Colors.white.withValues(alpha: 0.1),
+              size: 70,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Clima Local',
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '31°C, Ensolarado',
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Condição favorável para treino',
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatsRow() {
     return Row(
       children: [
@@ -85,9 +258,12 @@ class TelaDashboardAtleta extends StatelessWidget {
           child: _buildMetricCard(
             icon: Icons.water_drop_outlined,
             label: 'TAXA DE\nSUOR',
-            value: data.averageRateValue,
+            value: '${data.sweatRate.toStringAsFixed(2)} L/h',
             detail: null,
             accent: _lime,
+            progress: data.sweatRate > 0
+                ? (data.sweatRate / 2.0).clamp(0, 1)
+                : 0,
           ),
         ),
         const SizedBox(width: 18),
@@ -95,9 +271,10 @@ class TelaDashboardAtleta extends StatelessWidget {
           child: _buildMetricCard(
             icon: Icons.trending_up,
             label: 'VARIACAO',
-            value: data.variationValue,
+            value: '+12.5%',
             detail: 'DENTRO DO ALVO',
             accent: _cyan,
+            progress: 1.0,
           ),
         ),
       ],
@@ -109,6 +286,7 @@ class TelaDashboardAtleta extends StatelessWidget {
     required String label,
     required String value,
     required Color accent,
+    required double progress,
     String? detail,
   }) {
     return Container(
@@ -157,7 +335,7 @@ class TelaDashboardAtleta extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
-                value: data.progress,
+                value: progress,
                 minHeight: 2,
                 color: _lime,
                 backgroundColor: _surfaceLight,
@@ -245,7 +423,7 @@ class TelaDashboardAtleta extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                data.weeklyHydration,
+                '${(data.completedPercent * 100).toStringAsFixed(0)}%',
                 style: const TextStyle(
                   color: _text,
                   fontSize: 25,
@@ -270,108 +448,13 @@ class TelaDashboardAtleta extends StatelessWidget {
     );
   }
 
-  Widget _buildWeatherCard() {
-    final clima = data.clima;
-    final condicaoSemDados =
-        clima.condicao.trim().isEmpty ||
-        clima.condicao.toLowerCase() == 'sem informação' ||
-        clima.condicao.toLowerCase() == 'não informado' ||
-        clima.condicao.toLowerCase() == 'nao informado';
-    final hasClima =
-        clima.temperatura != 0 || clima.umidade != 0 || !condicaoSemDados;
-
-    return Container(
-      height: 130,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -8,
-            top: -12,
-            child: Icon(
-              Icons.cloud_outlined,
-              color: Colors.white.withValues(alpha: 0.1),
-              size: 70,
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Clima Local',
-                    style: TextStyle(
-                      color: _muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.8,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    hasClima
-                        ? '${clima.temperatura.toStringAsFixed(0)}°C'
-                        : '--°C',
-                    style: const TextStyle(
-                      color: _text,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    hasClima ? clima.condicao : 'Sem dados de clima',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-              if (hasClima && clima.umidade > 0) ...[
-                Row(
-                  children: [
-                    Icon(Icons.water_drop_outlined, color: _cyan, size: 14),
-                    const SizedBox(width: 5),
-                    Text(
-                      'UMIDADE ${clima.umidade}%',
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildActionButton(BuildContext context) {
     return SizedBox(
       height: 56,
       child: FloatingActionButton.extended(
-        onPressed:
-            onStartSession ??
-            () {
-              Navigator.of(context).pushNamed(AppRotas.iniciarTreino);
-            },
+        onPressed: () {
+          Navigator.of(context).pushNamed(AppRotas.iniciarTreino);
+        },
         backgroundColor: _lime,
         foregroundColor: Colors.white,
         elevation: 12,
@@ -416,7 +499,7 @@ class TelaDashboardAtleta extends StatelessWidget {
                 if (i == 0) {
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed('/dashboard-atleta');
+                  ).pushReplacementNamed(AppRotas.dashboardAtleta);
                 } else if (i == 1) {
                   Navigator.of(
                     context,
@@ -456,86 +539,6 @@ class TelaDashboardAtleta extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-class AtletaDashboardData {
-  const AtletaDashboardData({
-    required this.greetingTitle,
-    required this.subtitle,
-    required this.alertTitle,
-    required this.alertSubtitle,
-    required this.alertMessage,
-    this.hasAlert = false,
-    required this.progress,
-    required this.progressLabel,
-    required this.progressPercentage,
-    required this.averageRateLabel,
-    required this.averageRateValue,
-    required this.variationLabel,
-    required this.variationValue,
-    required this.variationColor,
-    required this.clima,
-    this.weeklyHydration = '88%',
-  });
-
-  final String greetingTitle;
-  final String subtitle;
-  final String alertTitle;
-  final String alertSubtitle;
-  final String alertMessage;
-  final bool hasAlert;
-  final double progress;
-  final String progressLabel;
-  final String progressPercentage;
-  final String averageRateLabel;
-  final String averageRateValue;
-  final String variationLabel;
-  final String variationValue;
-  final Color variationColor;
-  final ClimaDados clima;
-  final String weeklyHydration;
-
-  factory AtletaDashboardData.fromHydrationMetrics({
-    required String athleteName,
-    required double sweatRate,
-    required double recommendedIntakeLiters,
-    required Duration recommendedWindow,
-    required double completedPercent,
-    required double averageRate,
-    required double variationPercent,
-    bool hasHydrationAlert = true,
-    ClimaDados? clima,
-  }) {
-    final variationPositive = variationPercent >= 0;
-    final variationString = variationPositive
-        ? '+${variationPercent.toStringAsFixed(1)}%'
-        : '${variationPercent.toStringAsFixed(1)}%';
-
-    return AtletaDashboardData(
-      greetingTitle: 'BOM TREINO, ${athleteName.toUpperCase()}!',
-      subtitle: 'Seu foco hoje: Hidratacao e Recuperacao.',
-      alertTitle: 'ALERTA DE HIDRATACAO',
-      alertSubtitle: 'Sua taxa de suor na ultima sessao foi alta.',
-      alertMessage:
-          'Sua taxa de suor na ultima sessao foi alta. Recomenda-se ingestao de ${recommendedIntakeLiters.toStringAsFixed(1)}L nas proximas ${recommendedWindow.inHours} horas.',
-      hasAlert: hasHydrationAlert,
-      progress: completedPercent.clamp(0, 1),
-      progressLabel: 'COMPLETADO',
-      progressPercentage:
-          '${(completedPercent * 100).toStringAsFixed(0)}% COMPLETADO',
-      averageRateLabel: 'TAXA DE SUOR',
-      averageRateValue: '${sweatRate.toStringAsFixed(1)} L/h',
-      variationLabel: 'VARIACAO',
-      variationValue: variationString,
-      variationColor: variationPositive
-          ? const Color(0xFFB32025)
-          : const Color(0xFF8F171B),
-      clima:
-          clima ??
-          ClimaDados(temperatura: 0, umidade: 0, condicao: 'Sem informação'),
-      weeklyHydration: '88%',
     );
   }
 }

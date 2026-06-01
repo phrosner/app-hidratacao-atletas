@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
-import 'package:hidratrack/Modelos/SessaoHidratacaoModels.dart';
+import 'package:http/http.dart' as http;
 
 class PosSessao extends StatefulWidget {
   const PosSessao({super.key});
@@ -18,19 +22,21 @@ class _PosSessaoState extends State<PosSessao> {
   static const _text = Color(0xFF222222);
   static const _muted = Color(0xFF6B6B6B);
 
+  int _sessionTotalMl = 0;
+  int? _sessionDurationMinutes;
+  double? _temperaturaAmbiente;
+  bool _temperaturaCarregando = true;
+  bool _temperaturaFalha = false;
+
   final TextEditingController _pesoFinalController = TextEditingController(
     text: '80.5',
   );
-  final TextEditingController _volumeUrinaController = TextEditingController(
-    text: '0',
-  );
+  final TextEditingController _temperaturaController = TextEditingController();
 
   double _pesoInicial = 81.2;
   int _rpe = 9;
   int _urinaSelecionada = 2;
-  bool _roupasEncharcadas = false;
   bool _didLoadArgs = false;
-  RegistroPosSessaoArgs? _sessaoArgs;
 
   final Set<String> _sintomasSelecionados = {'Nausea', 'Cefaleia'};
   final List<String> _sintomas = [
@@ -52,40 +58,106 @@ class _PosSessaoState extends State<PosSessao> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _pesoFinalController.addListener(_atualizarPrevia);
-    _volumeUrinaController.addListener(_atualizarPrevia);
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_didLoadArgs) return;
     _didLoadArgs = true;
 
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is RegistroPosSessaoArgs) {
-      _sessaoArgs = args;
-      _pesoInicial = args.inicio.pesoInicialKg;
+    if (args is Map<String, dynamic>) {
+      _sessionTotalMl = args['totalMl'] as int? ?? _sessionTotalMl;
+      _sessionDurationMinutes = args['durationMinutes'] as int?;
+      final pesoInicialArg = args['pesoInicial'];
+      if (pesoInicialArg is double) {
+        _pesoInicial = pesoInicialArg;
+      } else if (pesoInicialArg is String) {
+        _pesoInicial =
+            double.tryParse(pesoInicialArg.replaceAll(',', '.')) ??
+            _pesoInicial;
+      }
     } else if (args is double) {
       _pesoInicial = args;
     } else if (args is String) {
       _pesoInicial = double.tryParse(args.replaceAll(',', '.')) ?? _pesoInicial;
     }
+
+    _carregarTemperaturaAmbiente();
   }
 
   @override
   void dispose() {
-    _pesoFinalController.removeListener(_atualizarPrevia);
-    _volumeUrinaController.removeListener(_atualizarPrevia);
     _pesoFinalController.dispose();
-    _volumeUrinaController.dispose();
+    _temperaturaController.dispose();
     super.dispose();
   }
 
-  void _atualizarPrevia() {
-    if (mounted) setState(() {});
+  Future<void> _carregarTemperaturaAmbiente() async {
+    try {
+      double? temperature;
+      bool backendRequested = false;
+
+      if (AuthStorage.token.isNotEmpty) {
+        backendRequested = true;
+        final dashboardData = await AtletaService.obterDashboardAtleta(
+          token: AuthStorage.token,
+        );
+        final tempFromDashboard = dashboardData['temperatura'];
+        temperature = tempFromDashboard is num
+            ? tempFromDashboard.toDouble()
+            : double.tryParse(tempFromDashboard?.toString() ?? '');
+      }
+
+      if (temperature == null || temperature <= 0) {
+        if (backendRequested) {
+          throw Exception(
+            'Temperatura não disponível no dashboard. Preencha manualmente.',
+          );
+        }
+
+        final geoResponse = await http
+            .get(Uri.parse('https://geolocation-db.com/json/'))
+            .timeout(const Duration(seconds: 8));
+        if (geoResponse.statusCode != 200)
+          throw Exception('Geolocation failed');
+
+        final geoJson = jsonDecode(geoResponse.body);
+        final latitude = (geoJson['latitude'] as num?)?.toDouble();
+        final longitude = (geoJson['longitude'] as num?)?.toDouble();
+        if (latitude == null || longitude == null)
+          throw Exception('Location missing');
+
+        final weatherResponse = await http
+            .get(
+              Uri.parse(
+                'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true&temperature_unit=celsius',
+              ),
+            )
+            .timeout(const Duration(seconds: 8));
+        if (weatherResponse.statusCode != 200)
+          throw Exception('Weather failed');
+
+        final weatherJson = jsonDecode(weatherResponse.body);
+        final current = weatherJson['current_weather'];
+        if (current == null) throw Exception('Weather data missing');
+
+        temperature = (current['temperature'] as num?)?.toDouble();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _temperaturaAmbiente = temperature;
+        _temperaturaController.text = temperature?.toStringAsFixed(1) ?? '';
+        _temperaturaCarregando = false;
+        _temperaturaFalha = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _temperaturaCarregando = false;
+        _temperaturaFalha = true;
+      });
+      debugPrint('Erro ao carregar temperatura ambiente: $error');
+    }
   }
 
   void _toggleSintoma(String sintoma) {
@@ -106,45 +178,101 @@ class _PosSessaoState extends State<PosSessao> {
     });
   }
 
-  void _salvarSessao() {
+  Future<void> _salvarSessao() async {
     final pesoFinal =
         double.tryParse(_pesoFinalController.text.replaceAll(',', '.')) ?? 0;
-    final volumeUrina = int.tryParse(_volumeUrinaController.text.trim()) ?? 0;
-    final fallbackInicio = RegistroInicioSessao(
-      pesoInicialKg: _pesoInicial,
-      iniciadoEm: DateTime.now(),
-      modalidade: 'Treino',
-      duracaoPrevistaMin: 60,
-      intensidade: 'Moderada',
-      temperaturaC: 28,
-      umidadeRelativa: 65,
-      corUrinaInicial: 1,
-      comSede: false,
-    );
 
     final registro = SessaoFinalizada(
-      inicio: _sessaoArgs?.inicio ?? fallbackInicio,
-      pesoFinalKg: pesoFinal,
-      volumeUrinaMl: volumeUrina,
-      roupasEncharcadas: _roupasEncharcadas,
+      pesoInicial: _pesoInicial,
+      pesoFinal: pesoFinal,
       sintomas: _sintomasSelecionados.toList(),
       rpe: _rpe,
-      corUrinaFinal: _urinaSelecionada,
-      finalizadoEm: DateTime.now(),
-      duracao: _sessaoArgs?.duracao ?? const Duration(hours: 1),
-      totalIngeridoMl: _sessaoArgs?.totalIngeridoMl ?? 0,
-      ingestoes: _sessaoArgs?.ingestoes ?? const [],
+      corUrina: _urinaSelecionada,
+      criadoEm: DateTime.now(),
     );
 
-    SessaoHidratacaoStore.salvar(registro);
+    int atletaId;
+    try {
+      atletaId = await AtletaService.obterAtletaIdAutenticado();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Atleta não autenticado: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sessao salva com sucesso'),
-        backgroundColor: _lime,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      if (_temperaturaCarregando) {
+        await _carregarTemperaturaAmbiente();
+      }
+
+      if (_temperaturaController.text.trim().isEmpty) {
+        await _carregarTemperaturaAmbiente();
+      }
+
+      final temperaturaAmbienteText = _temperaturaController.text
+          .replaceAll(',', '.')
+          .trim();
+      final temperaturaAmbiente =
+          double.tryParse(temperaturaAmbienteText) ?? _temperaturaAmbiente;
+      if (temperaturaAmbiente == null) {
+        throw Exception(
+          'Temperatura ambiente não carregada. Preencha manualmente.',
+        );
+      }
+
+      final sessaoCriada = await AtletaService.criarSessao(
+        atletaId: atletaId,
+        temperaturaAmbiente: temperaturaAmbiente,
+        umidadeRelativa: 65,
+      );
+
+      final int sessaoId = sessaoCriada['id'] is num
+          ? (sessaoCriada['id'] as num).toInt()
+          : int.tryParse(sessaoCriada['id']?.toString() ?? '') ?? 0;
+
+      if (sessaoId <= 0) {
+        throw Exception('ID da sessão inválido');
+      }
+
+      if ((_sessionDurationMinutes ?? 0) > 0) {
+        await AtletaService.finalizarSessao(
+          sessaoId: sessaoId,
+          durationMinutos: _sessionDurationMinutes!,
+        );
+      }
+
+      if (_sessionTotalMl > 0) {
+        await AtletaService.registrarConsumoSessao(
+          sessaoId: sessaoId,
+          quantidadeMl: _sessionTotalMl,
+          tempoDecorridoMinutos: _sessionDurationMinutes,
+        );
+      }
+
+      SessaoStore.salvar(registro);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessao salva com sucesso'),
+          backgroundColor: _lime,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar sessão: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     Navigator.of(context).pushReplacementNamed(AppRotas.dashboardAtleta);
   }
@@ -174,9 +302,7 @@ class _PosSessaoState extends State<PosSessao> {
                       const SizedBox(height: 18),
                       _buildWeightCard(),
                       const SizedBox(height: 14),
-                      _buildMeasurementQualityCard(),
-                      const SizedBox(height: 14),
-                      _buildCalculatedPreview(),
+                      _buildTemperatureCard(),
                       const SizedBox(height: 14),
                       _buildSymptomsCard(),
                       const SizedBox(height: 14),
@@ -329,154 +455,57 @@ class _PosSessaoState extends State<PosSessao> {
     );
   }
 
-  Widget _buildMeasurementQualityCard() {
+  Widget _buildTemperatureCard() {
     return _buildPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPanelTitle('AJUSTES DA MEDIDA'),
+          _buildPanelTitle(
+            'TEMPERATURA DO AMBIENTE',
+            trailing: Icons.thermostat_outlined,
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'A temperatura será usada para ajustar a recomendação da sessão.',
+            style: TextStyle(color: _muted, fontSize: 10, height: 1.4),
+          ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _volumeUrinaController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    color: _text,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'URINA DURANTE A SESSAO (ML)',
-                    labelStyle: const TextStyle(
-                      color: _muted,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: _lime),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SwitchListTile(
-            value: _roupasEncharcadas,
-            onChanged: (value) => setState(() => _roupasEncharcadas = value),
-            contentPadding: EdgeInsets.zero,
-            activeThumbColor: _lime,
-            title: const Text(
-              'Roupa muito encharcada ou troca de vestimenta',
-              style: TextStyle(
-                color: _text,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          if (_roupasEncharcadas)
+          if (_temperaturaCarregando)
             const Text(
-              'Pode aumentar o erro da medida. Repetir em sessao semelhante se necessario.',
-              style: TextStyle(color: _muted, fontSize: 10, height: 1.3),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalculatedPreview() {
-    final registro = _buildPreviewSessao();
-    final resultado = registro.resultado;
-
-    return _buildPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildPanelTitle('PREVIA DO RESULTADO'),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _PreviewMetric(
-                  label: 'TAXA',
-                  value:
-                      '${resultado.taxaSudoreseLitrosHora.toStringAsFixed(2)} L/h',
-                ),
+              'Carregando temperatura ambiente...',
+              style: TextStyle(color: _muted, fontSize: 12),
+            )
+          else if (_temperaturaFalha)
+            const Text(
+              'Falha ao carregar temperatura. Preencha manualmente abaixo.',
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            )
+          else
+            const SizedBox.shrink(),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _temperaturaController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              fillColor: Colors.white,
+              filled: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 12,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _PreviewMetric(
-                  label: 'VARIACAO',
-                  value:
-                      '${resultado.variacaoMassaPercentual.toStringAsFixed(1)}%',
-                ),
+              hintText: 'Temperatura em °C',
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+                borderSide: BorderSide.none,
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _PreviewMetric(
-            label: 'BALANCO',
-            value: '${resultado.balancoHidricoMl} mL',
-          ),
-          const SizedBox(height: 10),
-          Text(
-            resultado.alertaOperacional.toUpperCase(),
-            style: const TextStyle(
-              color: _lime,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+                borderSide: const BorderSide(color: _lime),
+              ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  SessaoFinalizada _buildPreviewSessao() {
-    final pesoFinal =
-        double.tryParse(_pesoFinalController.text.replaceAll(',', '.')) ??
-            _pesoInicial;
-    final volumeUrina = int.tryParse(_volumeUrinaController.text.trim()) ?? 0;
-    final fallbackInicio = RegistroInicioSessao(
-      pesoInicialKg: _pesoInicial,
-      iniciadoEm: DateTime.now(),
-      modalidade: 'Treino',
-      duracaoPrevistaMin: 60,
-      intensidade: 'Moderada',
-      temperaturaC: 28,
-      umidadeRelativa: 65,
-      corUrinaInicial: 1,
-      comSede: false,
-    );
-
-    return SessaoFinalizada(
-      inicio: _sessaoArgs?.inicio ?? fallbackInicio,
-      pesoFinalKg: pesoFinal,
-      volumeUrinaMl: volumeUrina,
-      roupasEncharcadas: _roupasEncharcadas,
-      sintomas: _sintomasSelecionados.toList(),
-      rpe: _rpe,
-      corUrinaFinal: _urinaSelecionada,
-      finalizadoEm: DateTime.now(),
-      duracao: _sessaoArgs?.duracao ?? const Duration(hours: 1),
-      totalIngeridoMl: _sessaoArgs?.totalIngeridoMl ?? 0,
-      ingestoes: _sessaoArgs?.ingestoes ?? const [],
     );
   }
 
@@ -792,48 +821,28 @@ class _ChoicePill extends StatelessWidget {
   }
 }
 
-class _PreviewMetric extends StatelessWidget {
-  const _PreviewMetric({required this.label, required this.value});
+class SessaoFinalizada {
+  const SessaoFinalizada({
+    required this.pesoInicial,
+    required this.pesoFinal,
+    required this.sintomas,
+    required this.rpe,
+    required this.corUrina,
+    required this.criadoEm,
+  });
 
-  final String label;
-  final String value;
+  final double pesoInicial;
+  final double pesoFinal;
+  final List<String> sintomas;
+  final int rpe;
+  final int corUrina;
+  final DateTime criadoEm;
+}
 
-  @override
-  Widget build(BuildContext context) {
-    const text = Color(0xFF222222);
-    const muted = Color(0xFF6B6B6B);
+abstract final class SessaoStore {
+  static final List<SessaoFinalizada> sessoes = [];
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: muted,
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: text,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
+  static void salvar(SessaoFinalizada sessao) {
+    sessoes.add(sessao);
   }
 }

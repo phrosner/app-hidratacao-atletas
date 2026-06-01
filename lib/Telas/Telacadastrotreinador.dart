@@ -1,5 +1,9 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
+import 'package:http/http.dart' as http;
 
 class TelaCadastroTreinador extends StatefulWidget {
   const TelaCadastroTreinador({super.key});
@@ -18,6 +22,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
 
   bool _obscureSenha = true;
   bool _obscureConfirmacao = true;
+  bool _carregandoCadastro = false;
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -62,18 +67,117 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
         '${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}/${picked.year}';
   }
 
-  void _salvarCadastro() {
+  String getApiBaseUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:8080';
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.2.2.246:8080';
+    }
+    return 'http://localhost:8080';
+  }
+
+  String _mensagemErroHttp(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['erro'] != null) {
+        return decoded['erro'].toString();
+      }
+    } catch (_) {}
+    if (body.isNotEmpty) return body;
+    return 'Erro inesperado';
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cadastro salvo com sucesso'),
-        backgroundColor: _lime,
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
     );
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const Telalogin()),
-    );
+  }
+
+  Future<void> _salvarCadastro() async {
+    final nome = _nomeController.text.trim();
+    final email = _emailController.text.trim();
+    final dataNascimento = _nascimentoController.text.trim();
+    final senha = _senhaController.text.trim();
+    final confirmacao = _confirmacaoController.text.trim();
+
+    if (nome.isEmpty) {
+      _mostrarMensagem('Informe o nome completo.');
+      return;
+    }
+
+    if (email.isEmpty) {
+      _mostrarMensagem('Informe o e-mail.');
+      return;
+    }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      _mostrarMensagem('Informe um e-mail válido.');
+      return;
+    }
+
+    if (dataNascimento.isEmpty) {
+      _mostrarMensagem('Informe a data de nascimento.');
+      return;
+    }
+
+    if (senha.isEmpty) {
+      _mostrarMensagem('Informe a senha.');
+      return;
+    }
+
+    if (senha != confirmacao) {
+      _mostrarMensagem('A senha e a confirmação não coincidem.');
+      return;
+    }
+
+    setState(() {
+      _carregandoCadastro = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('${getApiBaseUrl()}/api/auth/cadastrar'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'nome': nome,
+          'email': email,
+          'usuario': email,
+          'senha': senha,
+          'tipoUsuario': 'TREINADOR',
+          'ativo': true,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cadastro salvo com sucesso'),
+            backgroundColor: _lime,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Telalogin()),
+        );
+      } else {
+        _mostrarMensagem(
+          'Erro no cadastro: ${_mensagemErroHttp(response.body)}',
+        );
+      }
+    } catch (e) {
+      _mostrarMensagem('Não foi possível conectar ao backend.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregandoCadastro = false;
+        });
+      }
+    }
   }
 
   @override
@@ -297,29 +401,39 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
       width: double.infinity,
       height: 54,
       child: FilledButton(
-        onPressed: _salvarCadastro,
+        onPressed: _carregandoCadastro ? null : _salvarCadastro,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
+          disabledBackgroundColor: _muted,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
           elevation: 10,
           shadowColor: _lime.withValues(alpha: 0.55),
         ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'SALVAR CADASTRO',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.8,
+        child: _carregandoCadastro
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'SALVAR CADASTRO',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Icon(Icons.bolt, size: 17),
+                ],
               ),
-            ),
-            SizedBox(width: 10),
-            Icon(Icons.bolt, size: 17),
-          ],
-        ),
       ),
     );
   }
