@@ -20,6 +20,13 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     private TipoUsuario tipoUsuario;
 
+    private Integer idade;
+    private Integer altura;
+    private Double peso;
+    private String esporte;
+    private String nivelTreino;
+    private String metaDiaria;
+
     public enum TipoUsuario {
         ATLETA,
         TREINADOR,
@@ -82,5 +89,53 @@ public class Usuario {
 
     public void setTipoUsuario(TipoUsuario tipoUsuario) {
         this.tipoUsuario = tipoUsuario;
+    }
+
+    public Integer getIdade() {
+        return idade;
+    }
+
+    public void setIdade(Integer idade) {
+        this.idade = idade;
+    }
+
+    public Integer getAltura() {
+        return altura;
+    }
+
+    public void setAltura(Integer altura) {
+        this.altura = altura;
+    }
+
+    public Double getPeso() {
+        return peso;
+    }
+
+    public void setPeso(Double peso) {
+        this.peso = peso;
+    }
+
+    public String getEsporte() {
+        return esporte;
+    }
+
+    public void setEsporte(String esporte) {
+        this.esporte = esporte;
+    }
+
+    public String getNivelTreino() {
+        return nivelTreino;
+    }
+
+    public void setNivelTreino(String nivelTreino) {
+        this.nivelTreino = nivelTreino;
+    }
+
+    public String getMetaDiaria() {
+        return metaDiaria;
+    }
+
+    public void setMetaDiaria(String metaDiaria) {
+        this.metaDiaria = metaDiaria;
     }
 }

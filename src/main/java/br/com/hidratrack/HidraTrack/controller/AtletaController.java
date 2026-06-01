@@ -185,23 +185,103 @@ public class AtletaController {
             @RequestHeader("Authorization") String token) {
         try {
             final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
-            Map<String, Object> perfil = new HashMap<>();
-            perfil.put("id", usuarioLogado.map(Usuario::getId).orElse(1L));
-            perfil.put("nome", usuarioLogado
-                    .map(u -> u.getNome() != null && !u.getNome().isBlank() ? u.getNome() : u.getUsuario())
-                    .orElse("Atleta Silva"));
-            perfil.put("email", usuarioLogado.map(Usuario::getEmail).orElse(""));
-            perfil.put("peso", 75.5);
-            perfil.put("altura", 180);
-            perfil.put("idade", 25);
-            perfil.put("esporte", "Futebol");
-            perfil.put("nivelTreino", "Profissional");
-            
-            return ResponseEntity.ok(perfil);
+            if (usuarioLogado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("erro", "Token inválido ou não informado"));
+            }
+
+            return ResponseEntity.ok(construirPerfil(usuarioLogado.get()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("erro", "Erro ao obter perfil: " + e.getMessage()));
         }
+    }
+
+    @PutMapping("/perfil")
+    public ResponseEntity<?> atualizarPerfil(
+            @RequestBody Map<String, Object> dados,
+            @RequestHeader("Authorization") String token) {
+        try {
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
+            if (usuarioLogado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("erro", "Token inválido ou não informado"));
+            }
+
+            Usuario usuarioAtual = usuarioLogado.get();
+            if (dados.get("nome") instanceof String nome && !nome.isBlank()) {
+                usuarioAtual.setNome(nome.trim());
+            }
+            if (dados.get("email") instanceof String email && !email.isBlank()) {
+                usuarioAtual.setEmail(email.trim());
+            }
+            if (dados.get("senha") instanceof String senha && !senha.isBlank()) {
+                usuarioAtual.setSenha(senha);
+            }
+            if (dados.get("idade") != null) {
+                final Object idadeValue = dados.get("idade");
+                if (idadeValue instanceof Number number) {
+                    usuarioAtual.setIdade(number.intValue());
+                } else if (idadeValue instanceof String text && !text.isBlank()) {
+                    try {
+                        usuarioAtual.setIdade(Integer.parseInt(text.trim()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            if (dados.get("altura") != null) {
+                final Object alturaValue = dados.get("altura");
+                if (alturaValue instanceof Number number) {
+                    usuarioAtual.setAltura(number.intValue());
+                } else if (alturaValue instanceof String text && !text.isBlank()) {
+                    try {
+                        usuarioAtual.setAltura(Integer.parseInt(text.trim()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            if (dados.get("peso") != null) {
+                final Object pesoValue = dados.get("peso");
+                if (pesoValue instanceof Number number) {
+                    usuarioAtual.setPeso(number.doubleValue());
+                } else if (pesoValue instanceof String text && !text.isBlank()) {
+                    try {
+                        usuarioAtual.setPeso(Double.parseDouble(text.trim()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            if (dados.get("esporte") instanceof String esporte && !esporte.isBlank()) {
+                usuarioAtual.setEsporte(esporte.trim());
+            }
+            if (dados.get("nivelTreino") instanceof String nivelTreino && !nivelTreino.isBlank()) {
+                usuarioAtual.setNivelTreino(nivelTreino.trim());
+            }
+            if (dados.get("metaDiaria") instanceof String metaDiaria && !metaDiaria.isBlank()) {
+                usuarioAtual.setMetaDiaria(metaDiaria.trim());
+            }
+
+            final Usuario usuarioSalvo = usuarioService.salvar(usuarioAtual);
+            return ResponseEntity.ok(construirPerfil(usuarioSalvo));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("erro", "Erro ao atualizar perfil: " + e.getMessage()));
+        }
+    }
+
+    private Map<String, Object> construirPerfil(Usuario usuario) {
+        Map<String, Object> perfil = new HashMap<>();
+        perfil.put("id", usuario.getId());
+        perfil.put("nome", usuario.getNome() != null && !usuario.getNome().isBlank()
+                ? usuario.getNome() : usuario.getUsuario());
+        perfil.put("email", usuario.getEmail());
+        perfil.put("peso", usuario.getPeso());
+        perfil.put("altura", usuario.getAltura());
+        perfil.put("idade", usuario.getIdade());
+        perfil.put("esporte", usuario.getEsporte());
+        perfil.put("nivelTreino", usuario.getNivelTreino());
+        perfil.put("metaDiaria", usuario.getMetaDiaria());
+        return perfil;
     }
 
     /**

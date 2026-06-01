@@ -298,4 +298,28 @@ class AtletaService {
       throw Exception('Erro na requisição: $e');
     }
   }
+
+  static Future<Map<String, dynamic>> atualizarPerfil({
+    required String token,
+    required Map<String, dynamic> perfil,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/atletas/perfil'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(perfil),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Erro ao atualizar perfil: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Erro na requisição: $e');
+    }
+  }
 }
