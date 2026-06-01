@@ -1,4 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
+import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/app_rotas.dart';
 
 class Telaperfil extends StatefulWidget {
@@ -17,36 +22,248 @@ class _TelaperfilState extends State<Telaperfil> {
   static const _text = Color(0xFF222222);
   static const _muted = Color(0xFF6B6B6B);
 
-  bool _mostrarSenha = false;
+  bool _isSaving = false;
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
+  Map<String, dynamic>? _perfil;
 
-  static const _nomeCompleto = 'Vitor Thompson de Oliveira';
-  static const _nomeExibicao = 'Vitor Thompson';
-  static const _codigoPrincipal = 'HT-000000';
-  static const _codigos = ['HT-000001', 'HT-000002', 'HT-000003'];
-  static const _idade = '24';
-  static const _altura = '185';
-  static const _metaDiariaAgua = '2L de agua por dia';
-  static const _email = 'vitorthompson@atleta.com';
-  static const _senha = 'hidratrack24';
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
+  final TextEditingController _confirmSenhaController = TextEditingController();
+  final TextEditingController _idadeController = TextEditingController();
+  final TextEditingController _alturaController = TextEditingController();
+  final TextEditingController _pesoController = TextEditingController();
+  final TextEditingController _esporteController = TextEditingController();
+  final TextEditingController _nivelTreinoController = TextEditingController();
+  final TextEditingController _metaController = TextEditingController();
 
-  final TextEditingController _metaController = TextEditingController(
-    text: _metaDiariaAgua,
-  );
+  @override
+  void initState() {
+    super.initState();
+    _carregarPerfil();
+  }
 
   @override
   void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _senhaController.dispose();
+    _confirmSenhaController.dispose();
+    _idadeController.dispose();
+    _alturaController.dispose();
+    _pesoController.dispose();
+    _esporteController.dispose();
+    _nivelTreinoController.dispose();
     _metaController.dispose();
     super.dispose();
   }
 
-  void _salvarAlteracoes() {
+  Future<void> _carregarPerfil() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _errorMessage = '';
+    });
+
+    if (AuthStorage.token.isEmpty) {
+      _navegarParaLogin();
+      return;
+    }
+
+    try {
+      final perfil = await AtletaService.obterPerfilAtleta(
+        token: AuthStorage.token,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _perfil = perfil;
+        _nomeController.text = perfil['nome']?.toString() ?? '';
+        _emailController.text = perfil['email']?.toString() ?? '';
+        _idadeController.text = perfil['idade']?.toString() ?? '';
+        _alturaController.text = perfil['altura']?.toString() ?? '';
+        _pesoController.text = perfil['peso']?.toString() ?? '';
+        _esporteController.text = perfil['esporte']?.toString() ?? '';
+        _nivelTreinoController.text = perfil['nivelTreino']?.toString() ?? '';
+        _metaController.text = _obterNumeroMeta(perfil['metaDiaria']?.toString()) ?? '2';
+        if (_metaController.text.isEmpty) {
+          _metaController.text = '2';
+        }
+        _senhaController.clear();
+        _confirmSenhaController.clear();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao carregar perfil: $_errorMessage'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _salvarAlteracoes() async {
+    if (_isSaving || _isLoading) return;
     FocusManager.instance.primaryFocus?.unfocus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Alteracoes salvas com sucesso'),
-        behavior: SnackBarBehavior.floating,
-      ),
+
+    final nome = _nomeController.text.trim();
+    final email = _emailController.text.trim();
+    final senha = _senhaController.text;
+    final confirmSenha = _confirmSenhaController.text;
+    final metaValor = _metaController.text.trim();
+    final metaDiaria = _obterNumeroMeta(metaValor) ?? '2';
+
+    if (nome.isEmpty) {
+      _mostrarMensagem('Informe o nome completo.');
+      return;
+    }
+    if (email.isEmpty) {
+      _mostrarMensagem('Informe o email.');
+      return;
+    }
+    if (senha.isNotEmpty && senha != confirmSenha) {
+      _mostrarMensagem('A senha e a confirmação não coincidem.');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final perfilAtualizado = <String, dynamic>{
+      'nome': nome,
+      'email': email,
+      'idade': int.tryParse(_idadeController.text.trim()),
+      'altura': int.tryParse(_alturaController.text.trim()),
+      'peso': double.tryParse(_pesoController.text.trim()),
+      'esporte': _esporteController.text.trim(),
+      'nivelTreino': _nivelTreinoController.text.trim(),
+      'metaDiaria': '${metaDiaria}L de água por dia',
+    }..removeWhere((key, value) => value == null || value == '');
+
+    if (senha.isNotEmpty) {
+      perfilAtualizado['senha'] = senha;
+    }
+
+    try {
+      final perfil = await AtletaService.atualizarPerfil(
+        token: AuthStorage.token,
+        perfil: perfilAtualizado,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _perfil = perfil;
+        _nomeController.text = perfil['nome']?.toString() ?? nome;
+        _emailController.text = perfil['email']?.toString() ?? email;
+        _idadeController.text =
+            perfil['idade']?.toString() ?? _idadeController.text;
+        _alturaController.text =
+            perfil['altura']?.toString() ?? _alturaController.text;
+        _pesoController.text =
+            perfil['peso']?.toString() ?? _pesoController.text;
+        _esporteController.text =
+            perfil['esporte']?.toString() ?? _esporteController.text;
+        _nivelTreinoController.text =
+            perfil['nivelTreino']?.toString() ?? _nivelTreinoController.text;
+        _metaController.text =
+            _obterNumeroMeta(perfil['metaDiaria']?.toString()) ?? metaDiaria;
+        _senhaController.clear();
+        _confirmSenhaController.clear();
+        _isSaving = false;
+      });
+
+      AuthStorage.nome = perfil['nome']?.toString() ?? AuthStorage.nome;
+      _mostrarMensagem('Perfil atualizado com sucesso.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+      });
+      _mostrarMensagem('Erro ao atualizar perfil: $e');
+    }
+  }
+
+  void _navegarParaLogin() {
+    AuthStorage.clear();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const Telalogin()),
+      (route) => false,
     );
+  }
+
+  void _logout() {
+    _navegarParaLogin();
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  String? _obterNumeroMeta(String? metaDiaria) {
+    if (metaDiaria == null || metaDiaria.isEmpty) {
+      return null;
+    }
+    final match = RegExp(r'([0-9]+(?:\.[0-9]+)?)').firstMatch(metaDiaria);
+    return match?.group(1);
+  }
+
+  String get _nomeCompleto {
+    final nome = _perfil?['nome']?.toString();
+    return nome == null || nome.isEmpty ? AuthStorage.nome : nome;
+  }
+
+  String get _codigoPrincipal {
+    final idValue = _perfil?['id'];
+    if (idValue is num) {
+      return 'HT-${idValue.toInt().toString().padLeft(6, '0')}';
+    }
+    return 'HT-000000';
+  }
+
+  String get _email {
+    return _perfil?['email']?.toString() ?? 'não disponível';
+  }
+
+  String get _idade {
+    return _perfil?['idade']?.toString() ?? 'N/A';
+  }
+
+  String get _altura {
+    return _perfil?['altura']?.toString() ?? 'N/A';
+  }
+
+  String get _peso {
+    return _perfil?['peso']?.toString() ?? 'N/A';
+  }
+
+  String get _esporte {
+    return _perfil?['esporte']?.toString() ?? 'N/A';
+  }
+
+  String get _nivelTreino {
+    return _perfil?['nivelTreino']?.toString() ?? 'N/A';
+  }
+
+  String get _tipoUsuario {
+    return AuthStorage.tipoUsuario.isNotEmpty
+        ? AuthStorage.tipoUsuario
+        : _perfil?['tipoUsuario']?.toString() ?? 'ATLETA';
   }
 
   @override
@@ -68,12 +285,14 @@ class _TelaperfilState extends State<Telaperfil> {
                       _buildBrand(),
                       const SizedBox(height: 30),
                       _buildHeader(),
+                      const SizedBox(height: 18),
+                      _buildActionButtons(),
                       const SizedBox(height: 28),
-                      _buildSectionTitle('Informacoes Pessoais'),
+                      _buildSectionTitle('INFORMAÇÕES DO ATLETA'),
                       const SizedBox(height: 10),
                       _buildPersonalInfo(),
                       const SizedBox(height: 22),
-                      _buildSectionTitle('Credenciais de Acesso'),
+                      _buildSectionTitle('DADOS DE LOGIN'),
                       const SizedBox(height: 12),
                       _buildCredentialsCard(),
                       const SizedBox(height: 18),
@@ -107,6 +326,52 @@ class _TelaperfilState extends State<Telaperfil> {
   }
 
   Widget _buildHeader() {
+    if (_isLoading) {
+      return Column(
+        children: const [
+          SizedBox(height: 80),
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Carregando perfil...'),
+        ],
+      );
+    }
+
+    if (_hasError) {
+      return Column(
+        children: [
+          const SizedBox(height: 80),
+          const Icon(Icons.error_outline, size: 72, color: _lime),
+          const SizedBox(height: 16),
+          Text(
+            'Não foi possível carregar o perfil.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _text,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: _carregarPerfil,
+            style: FilledButton.styleFrom(
+              backgroundColor: _lime,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(46),
+            ),
+            child: const Text('TENTAR NOVAMENTE'),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Stack(
@@ -149,14 +414,55 @@ class _TelaperfilState extends State<Telaperfil> {
           ],
         ),
         const SizedBox(height: 12),
-        const Text(
-          _nomeExibicao,
+        Text(
+          _nomeCompleto,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: _text,
             fontSize: 23,
             fontWeight: FontWeight.w900,
             height: 1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'ID: ${_perfil?['id'] ?? '-'}',
+          style: const TextStyle(
+            color: _muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _carregarPerfil,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('ATUALIZAR'),
+            style: FilledButton.styleFrom(
+              backgroundColor: _lime,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(46),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('SAIR'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _lime,
+              side: const BorderSide(color: _lime),
+              minimumSize: const Size.fromHeight(46),
+            ),
           ),
         ),
       ],
@@ -185,91 +491,76 @@ class _TelaperfilState extends State<Telaperfil> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('NOME COMPLETO'),
-        const SizedBox(height: 7),
-        _buildValueBox(text: _nomeCompleto),
+        _buildTextField(label: 'NOME COMPLETO', controller: _nomeController),
         const SizedBox(height: 14),
-        _buildLabel('CODIGO DE IDENTIFICACAO'),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildValueBox(
-                text: _codigoPrincipal,
-                highlighted: true,
-                centered: true,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildValueBox(
-                text: _codigos[0],
-                highlighted: true,
-                centered: true,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildValueBox(
-                text: _codigos[1],
-                highlighted: true,
-                centered: true,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildValueBox(
-                text: _codigos[2],
-                highlighted: true,
-                centered: true,
-              ),
-            ),
-          ],
+        _buildTextField(
+          label: 'EMAIL DE LOGIN',
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 14),
         Row(
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('IDADE'),
-                  const SizedBox(height: 7),
-                  _buildValueBox(
-                    text: _idade,
-                    icon: Icons.person_outline,
-                    emphasized: true,
-                  ),
-                ],
+              child: _buildTextField(
+                label: 'IDADE',
+                controller: _idadeController,
+                keyboardType: TextInputType.number,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('ALTURA (CM)'),
-                  const SizedBox(height: 7),
-                  _buildValueBox(
-                    text: _altura,
-                    icon: Icons.straighten,
-                    emphasized: true,
-                  ),
-                ],
+              child: _buildTextField(
+                label: 'ALTURA (CM)',
+                controller: _alturaController,
+                keyboardType: TextInputType.number,
               ),
             ),
           ],
         ),
         const SizedBox(height: 14),
-        _buildLabel('QUADRO DE METAS'),
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                label: 'PESO (KG)',
+                controller: _pesoController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTextField(
+                label: 'ESPORTE',
+                controller: _esporteController,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        _buildTextField(
+          label: 'NÍVEL DE TREINO',
+          controller: _nivelTreinoController,
+        ),
+        const SizedBox(height: 14),
+        _buildLabel('META DIÁRIA'),
         const SizedBox(height: 7),
         _buildGoalCard(),
         const SizedBox(height: 12),
         _buildSaveChangesButton(),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, {required IconData icon}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(height: 7),
+        _buildValueBox(text: value, icon: icon, emphasized: true),
       ],
     );
   }
@@ -281,7 +572,7 @@ class _TelaperfilState extends State<Telaperfil> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: _lime.withValues(alpha: 0.16)),
+        border: Border.all(color: _lime.withOpacity(0.16)),
       ),
       child: Row(
         children: [
@@ -289,10 +580,14 @@ class _TelaperfilState extends State<Telaperfil> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: _lime.withValues(alpha: 0.10),
+              color: _lime.withOpacity(0.10),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.water_drop_outlined, color: _lime, size: 23),
+            child: const Icon(
+              Icons.water_drop_outlined,
+              color: _lime,
+              size: 23,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -300,7 +595,7 @@ class _TelaperfilState extends State<Telaperfil> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'META DIARIA',
+                  'META DIÁRIA',
                   style: TextStyle(
                     color: _muted,
                     fontSize: 9,
@@ -309,18 +604,48 @@ class _TelaperfilState extends State<Telaperfil> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                TextField(
-                  controller: _metaController,
-                  style: const TextStyle(
-                    color: _text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 46,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _surfaceLight,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        ),
+                        child: TextField(
+                          controller: _metaController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                          ],
+                          style: const TextStyle(
+                            color: _text,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            hintText: '2',
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'L de água por dia',
+                      style: TextStyle(
+                        color: _text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -343,9 +668,9 @@ class _TelaperfilState extends State<Telaperfil> {
         ),
         icon: const Icon(Icons.save_outlined, size: 18),
         label: const Text(
-          'SALVAR ALTERACOES',
+          'SALVAR ALTERAÇÕES',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,
           ),
@@ -361,32 +686,33 @@ class _TelaperfilState extends State<Telaperfil> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCredentialItem(
-            icon: Icons.mail_outline,
-            label: 'EMAIL DE LOGIN',
-            value: _email,
+          _buildTextField(
+            label: 'SENHA NOVA',
+            controller: _senhaController,
+            obscureText: true,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            label: 'CONFIRMAR SENHA',
+            controller: _confirmSenhaController,
+            obscureText: true,
           ),
           const SizedBox(height: 20),
           _buildCredentialItem(
-            icon: Icons.lock_outline,
-            label: 'SENHA',
-            value: _mostrarSenha ? _senha : '********',
-            trailing: IconButton(
-              tooltip: _mostrarSenha ? 'Ocultar senha' : 'Mostrar senha',
-              onPressed: () {
-                setState(() => _mostrarSenha = !_mostrarSenha);
-              },
-              icon: Icon(
-                _mostrarSenha ? Icons.visibility_off : Icons.visibility,
-                color: _muted,
-                size: 20,
-              ),
-            ),
+            icon: Icons.badge_outlined,
+            label: 'TIPO DE USUÁRIO',
+            value: _tipoUsuario,
+          ),
+          const SizedBox(height: 20),
+          _buildCredentialItem(
+            icon: Icons.fingerprint,
+            label: 'ID DO ATLETA',
+            value: _perfil?['id']?.toString() ?? 'N/A',
           ),
         ],
       ),
@@ -423,7 +749,46 @@ class _TelaperfilState extends State<Telaperfil> {
             ],
           ),
         ),
-        ?trailing,
+        if (trailing != null) trailing,
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(height: 7),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            obscureText: obscureText,
+            style: const TextStyle(
+              color: _text,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -516,9 +881,7 @@ class _TelaperfilState extends State<Telaperfil> {
       padding: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
