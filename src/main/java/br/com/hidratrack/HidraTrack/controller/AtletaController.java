@@ -1,7 +1,11 @@
 package br.com.hidratrack.HidraTrack.controller;
 
 import br.com.hidratrack.HidraTrack.dto.SessaoTreinoDTO;
+import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
+import br.com.hidratrack.HidraTrack.model.SessaoTreino;
 import br.com.hidratrack.HidraTrack.model.Usuario;
+import br.com.hidratrack.HidraTrack.repository.ConsumoAguaRepository;
+import br.com.hidratrack.HidraTrack.repository.SessaoTreinoRepository;
 import br.com.hidratrack.HidraTrack.service.SessaoTreinoService;
 import br.com.hidratrack.HidraTrack.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,13 +14,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/atletas")
@@ -28,6 +34,12 @@ public class AtletaController {
 
     @Autowired
     private SessaoTreinoService sessaoTreinoService;
+
+    @Autowired
+    private ConsumoAguaRepository consumoAguaRepository;
+
+    @Autowired
+    private SessaoTreinoRepository sessaoTreinoRepository;
 
     private Optional<Usuario> extrairUsuarioDoToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -63,8 +75,12 @@ public class AtletaController {
             double hidratacaoRecomendada = 0.0;
             double percentualConsumido = 0.0;
             double consumoMedio = 0.0;
+            double percentualVariacao = 0.0;
+            Long ultimaSessaoId = null;
+            String ultimaSessaoStatus = "DESCONHECIDO";
             double temperatura = 0.0;
             String clima = "Não informado";
+            LocalDateTime ultimaSessaoData = null;
 
             if (usuarioLogado.isPresent()) {
                 final Long atletaId = usuarioLogado.get().getId();
@@ -89,6 +105,9 @@ public class AtletaController {
                         if (ultimaSessao.getStats().getTaxaSudoroseMedia() != null) {
                             consumoMedio = ultimaSessao.getStats().getTaxaSudoroseMedia();
                         }
+                        if (ultimaSessao.getStats().getVariacaoSudorese() != null) {
+                            percentualVariacao = ultimaSessao.getStats().getVariacaoSudorese();
+                        }
                     }
                     if (ultimaSessao.getTemperaturaAmbiente() != null) {
                         temperatura = ultimaSessao.getTemperaturaAmbiente();
@@ -96,6 +115,9 @@ public class AtletaController {
                     if (ultimaSessao.getUmidadeRelativa() != null) {
                         clima = ultimaSessao.getUmidadeRelativa() > 70 ? "Úmido" : "Ameno";
                     }
+                    ultimaSessaoId = ultimaSessao.getId();
+                    ultimaSessaoStatus = ultimaSessao.getStatus();
+                    ultimaSessaoData = ultimaSessao.getDataInicio();
                 }
             }
 
@@ -104,7 +126,10 @@ public class AtletaController {
             dashboard.put("taxaSuor", taxaSuor);
             dashboard.put("hidratacaoRecomendada", hidratacaoRecomendada);
             dashboard.put("saudeGeral", "Ótimo");
-            dashboard.put("ultimaSessao", LocalDateTime.now().minusHours(2));
+            dashboard.put("ultimaSessao", ultimaSessaoData != null ? ultimaSessaoData : LocalDateTime.now().minusHours(2));
+            dashboard.put("ultimaSessaoId", ultimaSessaoId);
+            dashboard.put("ultimaSessaoStatus", ultimaSessaoStatus);
+            dashboard.put("percentualVariacao", percentualVariacao);
             dashboard.put("percentualConsumido", percentualConsumido);
             dashboard.put("consumoMedio", consumoMedio);
             dashboard.put("temperatura", temperatura);
@@ -175,6 +200,22 @@ public class AtletaController {
             case "CANCELADA" -> "block";
             default -> "bolt";
         };
+    }
+
+    private LocalDateTime parseDataHora(String dataHora) {
+        try {
+            return LocalDateTime.parse(dataHora);
+        } catch (DateTimeParseException e) {
+            return OffsetDateTime.parse(dataHora).toLocalDateTime();
+        }
+    }
+
+    private int calcularTempoDecorrido(SessaoTreino sessao, LocalDateTime dataHora) {
+        if (sessao.getDataInicio() == null || dataHora == null) {
+            return 0;
+        }
+        final long minutos = Duration.between(sessao.getDataInicio(), dataHora).toMinutes();
+        return (int) Math.max(minutos, 0);
     }
 
     /**
@@ -293,25 +334,25 @@ public class AtletaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
             @RequestHeader("Authorization") String token) {
         try {
-            // TODO: Implementar busca real no banco de dados
-            // TODO: Extrair userId do token
-            
-            List<Map<String, Object>> consumos = List.of(
-                Map.of(
-                    "dataHora", LocalDateTime.now().minusHours(3),
-                    "mlConsumidos", 500
-                ),
-                Map.of(
-                    "dataHora", LocalDateTime.now().minusHours(2),
-                    "mlConsumidos", 400
-                ),
-                Map.of(
-                    "dataHora", LocalDateTime.now().minusHours(1),
-                    "mlConsumidos", 300
-                )
-            );
-            
-            return ResponseEntity.ok(consumos);
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
+            if (usuarioLogado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("erro", "Token inválido ou não informado"));
+            }
+
+            final Long atletaId = usuarioLogado.get().getId();
+            final List<ConsumoAgua> consumos = consumoAguaRepository
+                    .findBySessaoAtletaIdAndTimestampBetweenOrderByTimestampDesc(atletaId, dataInicio, dataFim);
+
+            final List<Map<String, Object>> resposta = consumos.stream().map(consumo -> Map.<String, Object>of(
+                    "sessaoId", consumo.getSessao().getId(),
+                    "dataHora", consumo.getTimestamp(),
+                    "mlConsumidos", consumo.getQuantidadeMl(),
+                    "tipoLiquido", consumo.getTipoLiquido(),
+                    "tempoDecorridoMinutos", consumo.getTempoDecorridoMinutos()
+            )).collect(Collectors.toList());
+
+            return ResponseEntity.ok(resposta);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("erro", "Erro ao obter consumo: " + e.getMessage()));
@@ -326,19 +367,56 @@ public class AtletaController {
             @RequestBody Map<String, Object> consumoData,
             @RequestHeader("Authorization") String token) {
         try {
-            Double mlConsumidos = ((Number) consumoData.get("mlConsumidos")).doubleValue();
-            String dataHora = (String) consumoData.get("dataHora");
-            
-            // TODO: Validar dados
-            // TODO: Salvar no banco de dados
-            // TODO: Extrair userId do token
-            
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
+            if (usuarioLogado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("erro", "Token inválido ou não informado"));
+            }
+
+            final Long atletaId = usuarioLogado.get().getId();
+            final Object quantidadeObj = consumoData.get("mlConsumidos");
+            final Object dataHoraObj = consumoData.get("dataHora");
+            if (!(quantidadeObj instanceof Number) || dataHoraObj == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("erro", "mlConsumidos e dataHora são obrigatórios"));
+            }
+
+            final double mlConsumidos = ((Number) quantidadeObj).doubleValue();
+            final String dataHoraStr = dataHoraObj.toString();
+            final LocalDateTime dataHora = parseDataHora(dataHoraStr);
+            final String tipoLiquido = consumoData.getOrDefault("tipoLiquido", "Água").toString();
+
+            final Optional<SessaoTreino> sessaoAtiva = sessaoTreinoRepository
+                    .findByAtletaIdOrderByDataInicioDesc(atletaId)
+                    .stream()
+                    .filter(sessao -> sessao.getStatus() == SessaoTreino.StatusSessao.EM_ANDAMENTO
+                            || sessao.getStatus() == SessaoTreino.StatusSessao.PAUSADA)
+                    .findFirst();
+
+            if (sessaoAtiva.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("erro", "Nenhuma sessão ativa encontrada para este atleta"));
+            }
+
+            ConsumoAgua consumo = new ConsumoAgua();
+            consumo.setSessao(sessaoAtiva.get());
+            consumo.setQuantidadeMl((int) Math.round(mlConsumidos));
+            consumo.setTipoLiquido(tipoLiquido);
+            consumo.setTimestamp(dataHora);
+            consumo.setTempoDecorridoMinutos(calcularTempoDecorrido(sessaoAtiva.get(), dataHora));
+
+            consumoAguaRepository.save(consumo);
+
             Map<String, Object> resposta = new HashMap<>();
             resposta.put("sucesso", true);
             resposta.put("mensagem", "Consumo registrado com sucesso");
             resposta.put("mlConsumidos", mlConsumidos);
-            
+            resposta.put("sessaoId", sessaoAtiva.get().getId());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("erro", "Formato de dataHora inválido"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("erro", "Erro ao registrar consumo: " + e.getMessage()));
@@ -353,15 +431,18 @@ public class AtletaController {
             @PathVariable Long sessaoId,
             @RequestHeader("Authorization") String token) {
         try {
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("sessaoId", sessaoId);
-            metricas.put("dataInicio", LocalDateTime.now().minusHours(1));
-            metricas.put("duracao", 60); // minutos
-            metricas.put("consumoAgua", 1.5); // litros
-            metricas.put("mediaHidratacao", 1.0); // L/h
-            metricas.put("statusSaude", "Normal");
-            
-            return ResponseEntity.ok(metricas);
+            final Optional<Usuario> usuarioLogado = extrairUsuarioDoToken(token);
+            if (usuarioLogado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("erro", "Token inválido ou não informado"));
+            }
+
+            final SessaoTreinoDTO sessao = sessaoTreinoService.obterSessao(sessaoId);
+            if (sessao == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok(sessao);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("erro", "Erro ao obter métricas: " + e.getMessage()));
