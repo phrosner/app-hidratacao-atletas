@@ -1,7 +1,7 @@
 package br.com.hidratrack.HidraTrack.controller;
 
 import br.com.hidratrack.HidraTrack.dto.SessaoTreinoDTO;
-import br.com.hidratrack.HidraTrack.dto.MetricaSudoroseDTO;
+import br.com.hidratrack.HidraTrack.dto.MetricaSudoreseDTO;
 import br.com.hidratrack.HidraTrack.dto.ConsumoAguaDTO;
 import br.com.hidratrack.HidraTrack.dto.StatsSessaoDTO;
 import br.com.hidratrack.HidraTrack.service.SessaoTreinoService;
@@ -68,7 +68,7 @@ public class SessaoTreinoController {
     @PostMapping("/{sessaoId}/metrica")
     public ResponseEntity<String> registrarMetrica(
             @PathVariable Long sessaoId,
-            @RequestBody MetricaSudoroseDTO dto) {
+            @RequestBody MetricaSudoreseDTO dto) {
         try {
             sessaoService.registrarMetrica(sessaoId, dto);
             return ResponseEntity.ok("Métrica registrada com sucesso");

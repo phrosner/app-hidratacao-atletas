@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
 
 class TelaIniciarTreino extends StatefulWidget {
@@ -26,8 +28,23 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
     super.dispose();
   }
 
-  void _iniciarTreino() {
-    Navigator.of(context).pushReplacementNamed(AppRotas.sessaoAtiva);
+  void _iniciarTreino() async {
+    final pesoAtual = double.tryParse(_pesoController.text.replaceAll(',', '.')) ?? 0.0;
+    if (pesoAtual > 0 && AuthStorage.token.isNotEmpty) {
+      try {
+        await AtletaService.atualizarPerfil(
+          token: AuthStorage.token,
+          perfil: {'peso': pesoAtual},
+        );
+      } catch (e) {
+        debugPrint('Falha ao atualizar peso inicial no perfil: $e');
+      }
+    }
+
+    Navigator.of(context).pushReplacementNamed(
+      AppRotas.sessaoAtiva,
+      arguments: {'pesoInicial': pesoAtual},
+    );
   }
 
   @override

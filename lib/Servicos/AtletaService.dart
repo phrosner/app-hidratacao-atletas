@@ -36,7 +36,16 @@ class AtletaService {
       } else if (response.statusCode == 401) {
         throw Exception('Não autorizado - token inválido');
       } else {
-        throw Exception('Erro ao obter dashboard: ${response.statusCode}');
+        String errorDetail = '';
+        try {
+          final jsonBody = jsonDecode(response.body);
+          if (jsonBody is Map<String, dynamic> && jsonBody['erro'] != null) {
+            errorDetail = ' - ${jsonBody['erro']}';
+          }
+        } catch (_) {
+          errorDetail = '';
+        }
+        throw Exception('Erro ao obter dashboard: ${response.statusCode}$errorDetail');
       }
     } catch (e) {
       throw Exception('Erro na requisição: $e');

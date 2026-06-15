@@ -44,7 +44,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
       final stats = await HidraTrackApiClient.obterStats(sessaoId);
 
       return StatsData(
-        sweatRate: (stats['taxaSudoroseMedia'] as num?)?.toDouble() ?? 1.85,
+        sweatRate: (stats['taxaSudoreseMedia'] as num?)?.toDouble() ?? 1.85,
         intensity: 'ALTA',
         temperature:
             (sessao['temperaturaAmbiente'] as num?)?.toDouble() ?? 28.0,
@@ -76,7 +76,7 @@ class _TelastatsAtletaState extends State<TelastatsAtleta> {
 
       return metricas.map((m) {
         final tempo = m['tempoDecorridoMinutos'] as int?;
-        final taxa = (m['taxaSudorose'] as num?)?.toDouble() ?? 0.5;
+        final taxa = (m['taxaSudorese'] as num?)?.toDouble() ?? 0.5;
         final maxTaxa = 1.92;
 
         return PerformancePoint(

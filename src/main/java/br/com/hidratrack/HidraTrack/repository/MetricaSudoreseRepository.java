@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface MetricaSudoroseRepository extends JpaRepository<MetricaSudorese, Long> {
+public interface MetricaSudoreseRepository extends JpaRepository<MetricaSudorese, Long> {
     List<MetricaSudorese> findBySessaoIdOrderByTempoDecorridoMinutos(Long sessaoId);
 }

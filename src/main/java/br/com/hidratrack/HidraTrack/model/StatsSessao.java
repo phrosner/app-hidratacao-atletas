@@ -15,8 +15,8 @@ public class StatsSessao {
     @JoinColumn(name = "sessao_id", nullable = false)
     private SessaoTreino sessao;
 
-    @Column(nullable = false)
-    private Double taxaSudoroseMedia; // Média em L/h
+    @Column(name = "taxa_sudorese_media", nullable = false)
+    private Double taxaSudoreseMedia = 0.0; // Média em L/h
 
     private Double variacaoSudorese; // Em percentual
 
@@ -26,7 +26,7 @@ public class StatsSessao {
 
     private Integer balancoTeorico; // Em mL
 
-    private String deficitLevel; // NORMAL, ALERTA, CRITICO
+    private String deficitLevel = "NORMAL"; // NORMAL, ALERTA, CRITICO
 
     private Integer recomendacaoIntakeMin; // Em mL/h
 
@@ -58,12 +58,12 @@ public class StatsSessao {
         this.sessao = sessao;
     }
 
-    public Double getTaxaSudoroseMedia() {
-        return taxaSudoroseMedia;
+    public Double getTaxaSudoreseMedia() {
+        return taxaSudoreseMedia;
     }
 
-    public void setTaxaSudoroseMedia(Double taxaSudoroseMedia) {
-        this.taxaSudoroseMedia = taxaSudoroseMedia;
+    public void setTaxaSudoreseMedia(Double taxaSudoreseMedia) {
+        this.taxaSudoreseMedia = taxaSudoreseMedia;
     }
 
     public Double getVariacaoSudorese() {

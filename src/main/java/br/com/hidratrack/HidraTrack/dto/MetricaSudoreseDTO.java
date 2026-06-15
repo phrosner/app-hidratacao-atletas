@@ -2,7 +2,7 @@ package br.com.hidratrack.HidraTrack.dto;
 
 import java.time.LocalDateTime;
 
-public class MetricaSudoroseDTO {
+public class MetricaSudoreseDTO {
     private Long id;
     private Integer tempoDecorridoMinutos;
     private Double taxaSudorese;

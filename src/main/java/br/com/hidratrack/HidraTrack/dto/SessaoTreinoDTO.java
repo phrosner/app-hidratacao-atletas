@@ -12,7 +12,7 @@ public class SessaoTreinoDTO {
     private Double temperaturaAmbiente;
     private Integer umidadeRelativa;
     private String status;
-    private List<MetricaSudoroseDTO> metricas;
+    private List<MetricaSudoreseDTO> metricas;
     private List<ConsumoAguaDTO> consumos;
     private StatsSessaoDTO stats;
 
@@ -81,11 +81,11 @@ public class SessaoTreinoDTO {
         this.status = status;
     }
 
-    public List<MetricaSudoroseDTO> getMetricas() {
+    public List<MetricaSudoreseDTO> getMetricas() {
         return metricas;
     }
 
-    public void setMetricas(List<MetricaSudoroseDTO> metricas) {
+    public void setMetricas(List<MetricaSudoreseDTO> metricas) {
         this.metricas = metricas;
     }
 

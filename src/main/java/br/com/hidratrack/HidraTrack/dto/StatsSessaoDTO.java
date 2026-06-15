@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 public class StatsSessaoDTO {
     private Long id;
     private Long sessaoId;
-    private Double taxaSudoroseMedia;
+    private Double taxaSudoreseMedia;
     private Double variacaoSudorese;
     private Double perdaLiquidoTotal;
     private Double perdaLiquidoAjustada;
@@ -35,12 +35,12 @@ public class StatsSessaoDTO {
         this.sessaoId = sessaoId;
     }
 
-    public Double getTaxaSudoroseMedia() {
-        return taxaSudoroseMedia;
+    public Double getTaxaSudoreseMedia() {
+        return taxaSudoreseMedia;
     }
 
-    public void setTaxaSudoroseMedia(Double taxaSudoroseMedia) {
-        this.taxaSudoroseMedia = taxaSudoroseMedia;
+    public void setTaxaSudoreseMedia(Double taxaSudoreseMedia) {
+        this.taxaSudoreseMedia = taxaSudoreseMedia;
     }
 
     public Double getVariacaoSudorese() {

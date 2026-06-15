@@ -212,6 +212,17 @@ class _PosSessaoState extends State<PosSessao> {
         throw Exception('Temperatura ambiente não carregada. Preencha manualmente.');
       }
 
+      if (_pesoInicial > 0 && AuthStorage.token.isNotEmpty) {
+        try {
+          await AtletaService.atualizarPerfil(
+            token: AuthStorage.token,
+            perfil: {'peso': _pesoInicial},
+          );
+        } catch (e) {
+          debugPrint('Falha ao salvar peso inicial antes da sessão: $e');
+        }
+      }
+
       final sessaoCriada = await AtletaService.criarSessao(
         atletaId: atletaId,
         temperaturaAmbiente: temperaturaAmbiente,
@@ -241,6 +252,17 @@ class _PosSessaoState extends State<PosSessao> {
         );
       }
 
+      if (pesoFinal > 0 && AuthStorage.token.isNotEmpty) {
+        try {
+          await AtletaService.atualizarPerfil(
+            token: AuthStorage.token,
+            perfil: {'peso': pesoFinal},
+          );
+        } catch (e) {
+          debugPrint('Falha ao atualizar peso final no perfil: $e');
+        }
+      }
+
       SessaoStore.salvar(registro);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -261,11 +283,17 @@ class _PosSessaoState extends State<PosSessao> {
       return;
     }
 
-    Navigator.of(context).pushReplacementNamed(AppRotas.dashboardAtleta);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRotas.dashboardAtleta,
+      (route) => false,
+    );
   }
 
   void _descartarRegistro() {
-    Navigator.of(context).pushReplacementNamed(AppRotas.dashboardAtleta);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRotas.dashboardAtleta,
+      (route) => false,
+    );
   }
 
   @override

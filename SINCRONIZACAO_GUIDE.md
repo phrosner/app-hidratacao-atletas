@@ -38,7 +38,7 @@ Um sistema **100% funcional e sincronizado** entre frontend (Flutter) e backend 
 
 ### Novos Modelos:
 - `SessaoTreino`, `MetricaSudorese`, `StatsSessao`, `ConsumoAgua`
-- `SessaoTreinoDTO`, `MetricaSudoroseDTO`, `StatsSessaoDTO`, `ConsumoAguaDTO`
+- `SessaoTreinoDTO`, `MetricaSudoreseDTO`, `StatsSessaoDTO`, `ConsumoAguaDTO`
 
 ### Executar backend:
 ```bash

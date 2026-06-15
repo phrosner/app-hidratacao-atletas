@@ -305,7 +305,7 @@ class _TelaHistoricoState extends State<TelaHistorico> {
           ),
           const SizedBox(width: 12),
           Text(
-            '${sessao.sudoroseLitrosHora.toStringAsFixed(2)} L',
+            '${sessao.SudoreseLitrosHora.toStringAsFixed(2)} L',
             style: const TextStyle(
               color: _text,
               fontSize: 14,
@@ -361,7 +361,7 @@ class _TelaHistoricoState extends State<TelaHistorico> {
   List<double> _chartValues(List<SessaoHistorico> sessoes) {
     if (sessoes.isEmpty) return const [];
     return sessoes
-        .map((sessao) => sessao.sudoroseLitrosHora)
+        .map((sessao) => sessao.SudoreseLitrosHora)
         .toList()
         .reversed
         .toList();
@@ -503,7 +503,7 @@ class SessaoHistorico {
     required this.data,
     required this.titulo,
     required this.subtitulo,
-    required this.sudoroseLitrosHora,
+    required this.SudoreseLitrosHora,
     required this.icon,
     required this.accentColor,
   });
@@ -516,7 +516,7 @@ class SessaoHistorico {
       data: DateTime.tryParse(json['data']?.toString() ?? '') ?? DateTime.now(),
       titulo: json['tipoTreino']?.toString() ?? 'Treino',
       subtitulo: '',
-      sudoroseLitrosHora: (json['volumeLitros'] as num?)?.toDouble() ?? 0.0,
+      SudoreseLitrosHora: (json['volumeLitros'] as num?)?.toDouble() ?? 0.0,
       icon: _iconFromName(iconName),
       accentColor: _accentColorFromName(iconName),
     );
@@ -557,7 +557,7 @@ class SessaoHistorico {
   final DateTime data;
   final String titulo;
   final String subtitulo;
-  final double sudoroseLitrosHora;
+  final double SudoreseLitrosHora;
   final IconData icon;
   final Color accentColor;
 

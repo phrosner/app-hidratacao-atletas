@@ -13,6 +13,7 @@ class TelaSessaoAtiva extends StatefulWidget {
 
 class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
   static const _background = Color(0xFFFFFFFF);
+  double _pesoInicial = 0.0;
   static const _surfaceLight = Color(0xFFEDEDED);
   static const _lime = Color(0xFFB32025);
   static const _cyan = Color(0xFF8F171B);
@@ -35,6 +36,20 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
       if (!mounted) return;
       setState(() => _elapsed += const Duration(seconds: 1));
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      final pesoInicialArg = args['pesoInicial'];
+      if (pesoInicialArg is double) {
+        _pesoInicial = pesoInicialArg;
+      } else if (pesoInicialArg is String) {
+        _pesoInicial = double.tryParse(pesoInicialArg.replaceAll(',', '.')) ?? _pesoInicial;
+      }
+    }
   }
 
   @override
@@ -103,6 +118,7 @@ class _TelaSessaoAtivaState extends State<TelaSessaoAtiva> {
       arguments: {
         'totalMl': _totalMl,
         'durationMinutes': _elapsed.inMinutes,
+        'pesoInicial': _pesoInicial,
       },
     );
   }

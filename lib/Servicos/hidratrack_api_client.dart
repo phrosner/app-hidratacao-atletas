@@ -118,7 +118,7 @@ class HidraTrackApiClient {
         headers: _headers,
         body: jsonEncode({
           'tempoDecorridoMinutos': tempoDecorridoMinutos,
-          'taxaSudorose': taxaSudorese,
+          'taxaSudorese': taxaSudorese,
           'frequenciaCardiaca': frequenciaCardiaca,
           'velocidadeMedia': velocidadeMedia,
           'intensidade': intensidade,

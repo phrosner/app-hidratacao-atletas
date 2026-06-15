@@ -81,7 +81,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
           st = await HidraTrackApiClient.obterStats(id);
         } catch (_) {}
 
-        final taxa = (st['taxaSudoroseMedia'] as num?)?.toDouble();
+        final taxa = (st['taxaSudoreseMedia'] as num?)?.toDouble();
         final perda = (st['perdaLiquidoAjustada'] as num?)?.toDouble();
         final variacao = (st['variacaoSudorese'] as num?)?.toDouble();
         final recMax = (st['recomendacaoIntakeMax'] as num?)?.toInt();
@@ -96,7 +96,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
 
       final combined = <String, dynamic>{};
       if (count > 0) {
-        combined['taxaSudoroseMedia'] = sumaTaxa / count;
+        combined['taxaSudoreseMedia'] = sumaTaxa / count;
         combined['perdaLiquidoAjustada'] = sumaPerda / count;
         combined['variacaoSudorese'] = sumaVariacao / count;
         combined['recomendacaoIntakeMax'] = (sumaRecMax / count).round();
@@ -148,7 +148,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
 
       return metricas.map((m) {
         final tempo = m['tempoDecorridoMinutos'] as int? ?? 0;
-        final taxa = (m['taxaSudorose'] as num?)?.toDouble() ?? 0.0;
+        final taxa = (m['taxaSudorese'] as num?)?.toDouble() ?? 0.0;
         return _PerfPoint(time: '${tempo} MIN', value: (taxa / maxTaxa).clamp(0, 1).toDouble());
       }).toList();
     } catch (e) {
@@ -325,7 +325,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
                 final stats = snapshot.data!;
 
                 // extract values
-                final sweatRate = (stats['taxaSudoroseMedia'] as num?)?.toDouble() ?? _initialDouble;
+                final sweatRate = (stats['taxaSudoreseMedia'] as num?)?.toDouble() ?? _initialDouble;
                 final waterLoss = (stats['perdaLiquidoAjustada'] as num?)?.toDouble() ?? _initialDouble;
                 final variation = (stats['variacaoSudorese'] as num?)?.toDouble() ?? _initialDouble;
                 final recommended = (stats['recomendacaoIntakeMax'] as num?)?.toInt() ?? _initialInt;
@@ -771,7 +771,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
           }
 
           final body = {
-            'taxaSudoroseMedia': sweatRate,
+            'taxaSudoreseMedia': sweatRate,
             'perdaLiquidoAjustada': waterLossLiters,
             'perdaLiquidoTotal': (waterLossLiters + 0.0),
             'variacaoSudorese': weightVariation,

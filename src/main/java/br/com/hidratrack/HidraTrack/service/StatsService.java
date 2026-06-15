@@ -5,11 +5,14 @@ import br.com.hidratrack.HidraTrack.model.MetricaSudorese;
 import br.com.hidratrack.HidraTrack.model.SessaoTreino;
 import br.com.hidratrack.HidraTrack.model.StatsSessao;
 import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
-import br.com.hidratrack.HidraTrack.repository.MetricaSudoroseRepository;
+import br.com.hidratrack.HidraTrack.repository.MetricaSudoreseRepository;
 import br.com.hidratrack.HidraTrack.repository.StatsSessaoRepository;
 import br.com.hidratrack.HidraTrack.repository.ConsumoAguaRepository;
+import br.com.hidratrack.HidraTrack.repository.SessaoTreinoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,16 +21,20 @@ import java.util.Optional;
  * Implementa as fórmulas biomédicas para hidratação em atletismo.
  */
 @Service
+@Transactional
 public class StatsService {
 
     @Autowired
-    private MetricaSudoroseRepository metricaSudoroseRepository;
+    private MetricaSudoreseRepository metricaSudoreseRepository;
 
     @Autowired
     private StatsSessaoRepository statsSessaoRepository;
 
     @Autowired
     private ConsumoAguaRepository consumoAguaRepository;
+
+    @Autowired
+    private SessaoTreinoRepository sessaoTreinoRepository;
 
     /**
      * Calcula todas as estatísticas de uma sessão de treino.
@@ -41,21 +48,25 @@ public class StatsService {
      * 6. Recomendação de intake = Taxa de sudorese média * 1000 (com margem de ±100)
      */
     public StatsSessaoDTO calcularStatsSessionao(SessaoTreino sessao) {
-        List<MetricaSudorese> metricas = metricaSudoroseRepository.findBySessaoIdOrderByTempoDecorridoMinutos(sessao.getId());
+        List<MetricaSudorese> metricas = metricaSudoreseRepository.findBySessaoIdOrderByTempoDecorridoMinutos(sessao.getId());
         List<ConsumoAgua> consumos = consumoAguaRepository.findBySessaoIdOrderByTempoDecorridoMinutos(sessao.getId());
 
+        double taxaMedia;
+        double variacaoSudorese;
+
         if (metricas.isEmpty()) {
-            throw new IllegalArgumentException("Sessão sem métricas de sudorese");
+            taxaMedia = estimateSweatRate(sessao);
+            variacaoSudorese = 0.0;
+        } else {
+            // 1. Calcular taxa média de sudorese
+            taxaMedia = metricas.stream()
+                    .mapToDouble(MetricaSudorese::getTaxaSudorese)
+                    .average()
+                    .orElse(0.0);
+
+            // 2. Calcular variação de sudorese
+            variacaoSudorese = calcularVariacao(metricas);
         }
-
-        // 1. Calcular taxa média de sudorese
-        double taxaMedia = metricas.stream()
-                .mapToDouble(MetricaSudorese::getTaxaSudorese)
-                .average()
-                .orElse(0.0);
-
-        // 2. Calcular variação de sudorese
-        double variacaoSudorese = calcularVariacao(metricas);
 
         // 3. Calcular perda total de líquido
         int durationMinutos = sessao.getDurationMinutos() != null ? sessao.getDurationMinutos() : 90;
@@ -77,26 +88,42 @@ public class StatsService {
         String deficitLevel = determinarDeficitLevel(balancoTeorico);
 
         // 8. Calcular recomendações de intake
-        int intakeMin = (int) (taxaMedia * 1000 - 100);
-        int intakeMax = (int) (taxaMedia * 1000 + 250);
+        double pesoAtleta = sessao.getAtleta() != null && sessao.getAtleta().getPeso() != null
+                ? sessao.getAtleta().getPeso() : 0.0;
+        double ajustePesoMl = pesoAtleta > 0 ? pesoAtleta * 3.0 : 0.0;
+        int intakeMin = (int) Math.max(0, taxaMedia * 1000 - 100 + ajustePesoMl);
+        int intakeMax = (int) Math.max(intakeMin + 150, taxaMedia * 1000 + 250 + ajustePesoMl);
 
         // 9. Recomendação de intervalo e sódio
         int intervaloRecomendado = determinarIntervalo(metricas);
         int sodioRecomendado = 500; // mg/L padrão
 
-        // Criar e salvar entity
-        StatsSessao stats = new StatsSessao();
+        // Reutilizar registro existente se já houver stats calculado para a sessão.
+        StatsSessao stats = statsSessaoRepository.findBySessaoId(sessao.getId()).orElse(new StatsSessao());
         stats.setSessao(sessao);
-        stats.setTaxaSudoroseMedia(Math.round(taxaMedia * 100.0) / 100.0);
+
+        double taxaSudoreseMedia = Math.round(taxaMedia * 100.0) / 100.0;
+        stats.setTaxaSudoreseMedia(taxaSudoreseMedia);
         stats.setVariacaoSudorese(Math.round(variacaoSudorese * 100.0) / 100.0);
         stats.setPerdaLiquidoTotal(Math.round(perdaTotal * 100.0) / 100.0);
         stats.setPerdaLiquidoAjustada(Math.round(perdaAjustada * 100.0) / 100.0);
         stats.setBalancoTeorico(balancoTeorico);
-        stats.setDeficitLevel(deficitLevel);
+        stats.setDeficitLevel(deficitLevel != null ? deficitLevel : "NORMAL");
         stats.setRecomendacaoIntakeMin(intakeMin);
         stats.setRecomendacaoIntakeMax(intakeMax);
         stats.setIntervaloRecomendado(intervaloRecomendado);
         stats.setSodioRecomendado(sodioRecomendado);
+
+        if (stats.getCriadoEm() == null) {
+            stats.setCriadoEm(LocalDateTime.now());
+        }
+        if (stats.getAtualizadoEm() == null) {
+            stats.setAtualizadoEm(LocalDateTime.now());
+        }
+
+        if (stats.getTaxaSudoreseMedia() == null) {
+            stats.setTaxaSudoreseMedia(0.0);
+        }
 
         StatsSessao saved = statsSessaoRepository.save(stats);
 
@@ -149,14 +176,6 @@ public class StatsService {
     }
 
     /**
-     * Obtém as estatísticas de uma sessão pelo ID.
-     */
-    public StatsSessaoDTO obterStats(Long sessaoId) {
-        Optional<StatsSessao> stats = statsSessaoRepository.findBySessaoId(sessaoId);
-        return stats.map(this::convertToDTO).orElse(null);
-    }
-
-    /**
      * Atualiza os valores de StatsSessao para uma sessão existente.
      * Retorna o DTO atualizado ou lança exceção se não existir.
      */
@@ -168,7 +187,7 @@ public class StatsService {
 
         StatsSessao stats = opt.get();
 
-        if (dto.getTaxaSudoroseMedia() != null) stats.setTaxaSudoroseMedia(dto.getTaxaSudoroseMedia());
+        if (dto.getTaxaSudoreseMedia() != null) stats.setTaxaSudoreseMedia(dto.getTaxaSudoreseMedia());
         if (dto.getVariacaoSudorese() != null) stats.setVariacaoSudorese(dto.getVariacaoSudorese());
         if (dto.getPerdaLiquidoTotal() != null) stats.setPerdaLiquidoTotal(dto.getPerdaLiquidoTotal());
         if (dto.getPerdaLiquidoAjustada() != null) stats.setPerdaLiquidoAjustada(dto.getPerdaLiquidoAjustada());
@@ -192,7 +211,7 @@ public class StatsService {
         StatsSessaoDTO dto = new StatsSessaoDTO();
         dto.setId(stats.getId());
         dto.setSessaoId(stats.getSessao().getId());
-        dto.setTaxaSudoroseMedia(stats.getTaxaSudoroseMedia());
+        dto.setTaxaSudoreseMedia(stats.getTaxaSudoreseMedia());
         dto.setVariacaoSudorese(stats.getVariacaoSudorese());
         dto.setPerdaLiquidoTotal(stats.getPerdaLiquidoTotal());
         dto.setPerdaLiquidoAjustada(stats.getPerdaLiquidoAjustada());
@@ -205,5 +224,31 @@ public class StatsService {
         dto.setCriadoEm(stats.getCriadoEm());
         dto.setAtualizadoEm(stats.getAtualizadoEm());
         return dto;
+    }
+
+    private double estimateSweatRate(SessaoTreino sessao) {
+        double pesoAtleta = sessao.getAtleta() != null && sessao.getAtleta().getPeso() != null
+                ? sessao.getAtleta().getPeso() : 75.0;
+        double taxaEstimativa = pesoAtleta * 0.01;
+        if (taxaEstimativa < 0.6) {
+            taxaEstimativa = 0.6;
+        } else if (taxaEstimativa > 1.4) {
+            taxaEstimativa = 1.4;
+        }
+        return taxaEstimativa;
+    }
+
+    public StatsSessaoDTO obterStats(Long sessaoId) {
+        Optional<StatsSessao> stats = statsSessaoRepository.findBySessaoId(sessaoId);
+        if (stats.isPresent()) {
+            return convertToDTO(stats.get());
+        }
+
+        Optional<SessaoTreino> sessaoOpt = sessaoTreinoRepository.findById(sessaoId);
+        if (sessaoOpt.isPresent()) {
+            return calcularStatsSessionao(sessaoOpt.get());
+        }
+
+        return null;
     }
 }

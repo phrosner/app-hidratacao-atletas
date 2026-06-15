@@ -1,6 +1,8 @@
 package br.com.hidratrack.HidraTrack.controller;
 
 import br.com.hidratrack.HidraTrack.dto.SessaoTreinoDTO;
+import br.com.hidratrack.HidraTrack.dto.StatsSessaoDTO;
+import br.com.hidratrack.HidraTrack.service.StatsService;
 import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
 import br.com.hidratrack.HidraTrack.model.SessaoTreino;
 import br.com.hidratrack.HidraTrack.model.Usuario;
@@ -14,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -40,6 +44,9 @@ public class AtletaController {
 
     @Autowired
     private SessaoTreinoRepository sessaoTreinoRepository;
+
+    @Autowired
+    private StatsService statsService;
 
     private Optional<Usuario> extrairUsuarioDoToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -87,26 +94,31 @@ public class AtletaController {
                 final List<SessaoTreinoDTO> sessoes = sessaoTreinoService.obterSessoesAtleta(atletaId);
                 if (!sessoes.isEmpty()) {
                     final SessaoTreinoDTO ultimaSessao = sessoes.get(0);
-                    if (ultimaSessao.getStats() != null) {
-                        if (ultimaSessao.getStats().getTaxaSudoroseMedia() != null) {
-                            taxaSuor = ultimaSessao.getStats().getTaxaSudoroseMedia();
+                    StatsSessaoDTO stats = ultimaSessao.getStats();
+                    if (stats == null && ultimaSessao.getId() != null) {
+                        stats = statsService.obterStats(ultimaSessao.getId());
+                    }
+
+                    if (stats != null) {
+                        if (stats.getTaxaSudoreseMedia() != null) {
+                            taxaSuor = stats.getTaxaSudoreseMedia();
                         }
-                        if (ultimaSessao.getStats().getRecomendacaoIntakeMax() != null) {
-                            hidratacaoRecomendada = ultimaSessao.getStats().getRecomendacaoIntakeMax() / 1000.0;
+                        if (stats.getRecomendacaoIntakeMax() != null) {
+                            hidratacaoRecomendada = stats.getRecomendacaoIntakeMax() / 1000.0;
                         }
                         if (ultimaSessao.getConsumos() != null && !ultimaSessao.getConsumos().isEmpty()
-                                && ultimaSessao.getStats().getRecomendacaoIntakeMax() != null
-                                && ultimaSessao.getStats().getRecomendacaoIntakeMax() > 0) {
+                                && stats.getRecomendacaoIntakeMax() != null
+                                && stats.getRecomendacaoIntakeMax() > 0) {
                             double totalMl = ultimaSessao.getConsumos().stream()
                                     .mapToDouble(c -> c.getQuantidadeMl() != null ? c.getQuantidadeMl() : 0.0)
                                     .sum();
-                            percentualConsumido = (totalMl / ultimaSessao.getStats().getRecomendacaoIntakeMax()) * 100.0;
+                            percentualConsumido = (totalMl / stats.getRecomendacaoIntakeMax()) * 100.0;
                         }
-                        if (ultimaSessao.getStats().getTaxaSudoroseMedia() != null) {
-                            consumoMedio = ultimaSessao.getStats().getTaxaSudoroseMedia();
+                        if (stats.getTaxaSudoreseMedia() != null) {
+                            consumoMedio = stats.getTaxaSudoreseMedia();
                         }
-                        if (ultimaSessao.getStats().getVariacaoSudorese() != null) {
-                            percentualVariacao = ultimaSessao.getStats().getVariacaoSudorese();
+                        if (stats.getVariacaoSudorese() != null) {
+                            percentualVariacao = stats.getVariacaoSudorese();
                         }
                     }
                     if (ultimaSessao.getTemperaturaAmbiente() != null) {
@@ -126,7 +138,9 @@ public class AtletaController {
             dashboard.put("taxaSuor", taxaSuor);
             dashboard.put("hidratacaoRecomendada", hidratacaoRecomendada);
             dashboard.put("saudeGeral", "Ótimo");
-            dashboard.put("ultimaSessao", ultimaSessaoData != null ? ultimaSessaoData : LocalDateTime.now().minusHours(2));
+            dashboard.put("ultimaSessao", ultimaSessaoData != null
+                    ? ultimaSessaoData.toString()
+                    : LocalDateTime.now().minusHours(2).toString());
             dashboard.put("ultimaSessaoId", ultimaSessaoId);
             dashboard.put("ultimaSessaoStatus", ultimaSessaoStatus);
             dashboard.put("percentualVariacao", percentualVariacao);
@@ -137,9 +151,22 @@ public class AtletaController {
 
             return ResponseEntity.ok(dashboard);
         } catch (Exception e) {
+            System.err.println("Erro ao obter dashboard: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("erro", "Erro ao obter dashboard: " + e.getMessage()));
+                    .body(Map.of(
+                            "erro", "Erro ao obter dashboard: " + e.getMessage(),
+                            "excecao", e.getClass().getName(),
+                            "stackTrace", getStackTrace(e)
+                    ));
         }
+    }
+
+    private String getStackTrace(Throwable throwable) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        return sw.toString();
     }
 
     /**

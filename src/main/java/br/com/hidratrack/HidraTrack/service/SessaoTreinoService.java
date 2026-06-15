@@ -1,7 +1,7 @@
 package br.com.hidratrack.HidraTrack.service;
 
 import br.com.hidratrack.HidraTrack.dto.SessaoTreinoDTO;
-import br.com.hidratrack.HidraTrack.dto.MetricaSudoroseDTO;
+import br.com.hidratrack.HidraTrack.dto.MetricaSudoreseDTO;
 import br.com.hidratrack.HidraTrack.dto.ConsumoAguaDTO;
 import br.com.hidratrack.HidraTrack.dto.StatsSessaoDTO;
 import br.com.hidratrack.HidraTrack.model.SessaoTreino;
@@ -9,28 +9,35 @@ import br.com.hidratrack.HidraTrack.model.MetricaSudorese;
 import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
 import br.com.hidratrack.HidraTrack.model.Usuario;
 import br.com.hidratrack.HidraTrack.repository.SessaoTreinoRepository;
-import br.com.hidratrack.HidraTrack.repository.MetricaSudoroseRepository;
+import br.com.hidratrack.HidraTrack.repository.MetricaSudoreseRepository;
 import br.com.hidratrack.HidraTrack.repository.ConsumoAguaRepository;
+import br.com.hidratrack.HidraTrack.repository.StatsSessaoRepository;
 import br.com.hidratrack.HidraTrack.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class SessaoTreinoService {
 
     @Autowired
     private SessaoTreinoRepository sessaoRepository;
 
     @Autowired
-    private MetricaSudoroseRepository metricaRepository;
+    private MetricaSudoreseRepository metricaRepository;
 
     @Autowired
     private ConsumoAguaRepository consumoRepository;
+
+    @Autowired
+    private StatsSessaoRepository statsSessaoRepository;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -72,12 +79,18 @@ public class SessaoTreinoService {
         sessao.setDurationMinutos(durationMinutos);
         sessao.setStatus(SessaoTreino.StatusSessao.CONCLUIDA);
 
+        if (durationMinutos == null || durationMinutos <= 0) {
+            durationMinutos = (int) Math.max(0,
+                    Duration.between(sessao.getDataInicio(), sessao.getDataFim()).toMinutes());
+        }
+        sessao.setDurationMinutos(durationMinutos);
+
         SessaoTreino updated = sessaoRepository.save(sessao);
 
         // Calcular estatísticas
         try {
-            StatsSessaoDTO stats = statsService.calcularStatsSessionao(updated);
-            updated.setStats(convertDTOToStats(stats, updated));
+            statsService.calcularStatsSessionao(updated);
+            statsSessaoRepository.findBySessaoId(updated.getId()).ifPresent(updated::setStats);
         } catch (Exception e) {
             // Log erro mas não falha a atualização
             System.err.println("Erro ao calcular stats: " + e.getMessage());
@@ -89,7 +102,7 @@ public class SessaoTreinoService {
     /**
      * Registra uma métrica de sudorese para uma sessão.
      */
-    public void registrarMetrica(Long sessaoId, MetricaSudoroseDTO dto) {
+    public void registrarMetrica(Long sessaoId, MetricaSudoreseDTO dto) {
         Optional<SessaoTreino> sessaoOpt = sessaoRepository.findById(sessaoId);
         if (sessaoOpt.isEmpty()) {
             throw new IllegalArgumentException("Sessão não encontrada");
@@ -105,6 +118,16 @@ public class SessaoTreinoService {
         metrica.setObservacoes(dto.getObservacoes());
 
         metricaRepository.save(metrica);
+
+        if (sessaoOpt.get().getStatus() == SessaoTreino.StatusSessao.CONCLUIDA) {
+            try {
+                statsService.calcularStatsSessionao(sessaoOpt.get());
+                statsSessaoRepository.findBySessaoId(sessaoOpt.get().getId())
+                        .ifPresent(sessaoOpt.get()::setStats);
+            } catch (Exception e) {
+                System.err.println("Erro ao recalcular stats após métrica registrada: " + e.getMessage());
+            }
+        }
     }
 
     /**
@@ -123,6 +146,16 @@ public class SessaoTreinoService {
         consumo.setTipoLiquido(dto.getTipoLiquido());
 
         consumoRepository.save(consumo);
+
+        if (sessaoOpt.get().getStatus() == SessaoTreino.StatusSessao.CONCLUIDA) {
+            try {
+                statsService.calcularStatsSessionao(sessaoOpt.get());
+                statsSessaoRepository.findBySessaoId(sessaoOpt.get().getId())
+                        .ifPresent(sessaoOpt.get()::setStats);
+            } catch (Exception e) {
+                System.err.println("Erro ao recalcular stats após consumo registrado: " + e.getMessage());
+            }
+        }
     }
 
     /**
@@ -169,30 +202,31 @@ public class SessaoTreinoService {
         dto.setUmidadeRelativa(sessao.getUmidadeRelativa());
         dto.setStatus(sessao.getStatus().toString());
 
-        // Converter métricas
-        if (sessao.getMetricas() != null && !sessao.getMetricas().isEmpty()) {
-            dto.setMetricas(sessao.getMetricas().stream()
+        // Converter métricas explicitamente via repositório para evitar problemas de lazy loading
+        List<MetricaSudorese> metricas = metricaRepository.findBySessaoIdOrderByTempoDecorridoMinutos(sessao.getId());
+        if (!metricas.isEmpty()) {
+            dto.setMetricas(metricas.stream()
                     .map(this::convertMetricaToDTO)
                     .collect(Collectors.toList()));
         }
 
-        // Converter consumos
-        if (sessao.getConsumos() != null && !sessao.getConsumos().isEmpty()) {
-            dto.setConsumos(sessao.getConsumos().stream()
+        // Converter consumos explicitamente via repositório para evitar problemas de lazy loading
+        List<ConsumoAgua> consumos = consumoRepository.findBySessaoIdOrderByTempoDecorridoMinutos(sessao.getId());
+        if (!consumos.isEmpty()) {
+            dto.setConsumos(consumos.stream()
                     .map(this::convertConsumoToDTO)
                     .collect(Collectors.toList()));
         }
 
-        // Converter stats
-        if (sessao.getStats() != null) {
-            dto.setStats(convertStatsToDTO(sessao.getStats()));
-        }
+        // Converter stats explicitamente via repositório
+        statsSessaoRepository.findBySessaoId(sessao.getId())
+                .ifPresent(stats -> dto.setStats(convertStatsToDTO(stats)));
 
         return dto;
     }
 
-    private MetricaSudoroseDTO convertMetricaToDTO(MetricaSudorese metrica) {
-        MetricaSudoroseDTO dto = new MetricaSudoroseDTO();
+    private MetricaSudoreseDTO convertMetricaToDTO(MetricaSudorese metrica) {
+        MetricaSudoreseDTO dto = new MetricaSudoreseDTO();
         dto.setId(metrica.getId());
         dto.setTempoDecorridoMinutos(metrica.getTempoDecorridoMinutos());
         dto.setTaxaSudorese(metrica.getTaxaSudorese());
@@ -218,7 +252,7 @@ public class SessaoTreinoService {
         StatsSessaoDTO dto = new StatsSessaoDTO();
         dto.setId(stats.getId());
         dto.setSessaoId(stats.getSessao().getId());
-        dto.setTaxaSudoroseMedia(stats.getTaxaSudoroseMedia());
+        dto.setTaxaSudoreseMedia(stats.getTaxaSudoreseMedia());
         dto.setVariacaoSudorese(stats.getVariacaoSudorese());
         dto.setPerdaLiquidoTotal(stats.getPerdaLiquidoTotal());
         dto.setPerdaLiquidoAjustada(stats.getPerdaLiquidoAjustada());
@@ -236,7 +270,7 @@ public class SessaoTreinoService {
     private br.com.hidratrack.HidraTrack.model.StatsSessao convertDTOToStats(StatsSessaoDTO dto, SessaoTreino sessao) {
         br.com.hidratrack.HidraTrack.model.StatsSessao stats = new br.com.hidratrack.HidraTrack.model.StatsSessao();
         stats.setSessao(sessao);
-        stats.setTaxaSudoroseMedia(dto.getTaxaSudoroseMedia());
+        stats.setTaxaSudoreseMedia(dto.getTaxaSudoreseMedia());
         stats.setVariacaoSudorese(dto.getVariacaoSudorese());
         stats.setPerdaLiquidoTotal(dto.getPerdaLiquidoTotal());
         stats.setPerdaLiquidoAjustada(dto.getPerdaLiquidoAjustada());

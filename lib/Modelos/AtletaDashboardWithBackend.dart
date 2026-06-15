@@ -261,6 +261,15 @@ class _TelaDashboardAtletaComBackendState
                         fontSize: 16,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      snapshot.error?.toString() ?? '',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF888888),
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: _recarregarDados,
