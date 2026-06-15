@@ -14,6 +14,7 @@ import 'package:hidratrack/Telas/Telaperfil.dart';
 import 'package:hidratrack/Telas/TelaTaxaMedia.dart';
 import 'package:hidratrack/Telas/TelaSessaoAtiva.dart';
 import 'package:hidratrack/Telas/Pos_sessao.dart';
+import 'package:hidratrack/Telas/DetalhesSessao.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,10 @@ class MyApp extends StatelessWidget {
         AppRotas.dashboardAtleta: (context) {
           final token = ModalRoute.of(context)?.settings.arguments as String?;
           return TelaDashboardAtletaComBackend(tokenAtleta: token);
+        },
+        AppRotas.detalhesSessao: (context) {
+          final sessaoId = ModalRoute.of(context)?.settings.arguments as int?;
+          return DetalhesSessao();
         },
       },
     );

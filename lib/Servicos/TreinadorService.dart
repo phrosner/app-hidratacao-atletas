@@ -196,6 +196,7 @@ class TreinadorService {
     required String dataNascimento,
     required double peso,
     required int altura,
+    String? genero,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/cadastrar-atleta'),
@@ -206,6 +207,7 @@ class TreinadorService {
         'dataNascimento': dataNascimento,
         'peso': peso,
         'altura': altura,
+        'genero': genero,
       }),
     );
 

@@ -333,4 +333,45 @@ class AtletaService {
       throw Exception('Erro na requisição: $e');
     }
   }
+
+  static Future<bool> atualizarPosSessao({
+    required int sessaoId,
+    required double pesoInicial,
+    required double pesoFinal,
+    required int rpe,
+    required int corUrina,
+    required List<String> sintomas,
+    String? tipoTreino,
+  }) async {
+    final token = AuthStorage.token;
+    if (token.isEmpty) {
+      throw Exception('Token não encontrado');
+    }
+
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/sessoes/$sessaoId/pos-sessao'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'pesoInicial': pesoInicial,
+          'pesoFinal': pesoFinal,
+          'rpe': rpe,
+          'corUrina': corUrina,
+          'sintomas': sintomas.join(','),
+          'tipoTreino': tipoTreino,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception('Erro ao atualizar pós-sessão: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Erro na requisição: $e');
+    }
+  }
 }

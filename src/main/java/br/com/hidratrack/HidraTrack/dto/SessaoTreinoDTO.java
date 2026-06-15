@@ -11,6 +11,12 @@ public class SessaoTreinoDTO {
     private Integer durationMinutos;
     private Double temperaturaAmbiente;
     private Integer umidadeRelativa;
+    private Double pesoInicial;
+    private Double pesoFinal;
+    private Integer rpe;
+    private Integer corUrina;
+    private String sintomas;
+    private String tipoTreino;
     private String status;
     private List<MetricaSudoreseDTO> metricas;
     private List<ConsumoAguaDTO> consumos;
@@ -71,6 +77,54 @@ public class SessaoTreinoDTO {
 
     public void setUmidadeRelativa(Integer umidadeRelativa) {
         this.umidadeRelativa = umidadeRelativa;
+    }
+
+    public Double getPesoInicial() {
+        return pesoInicial;
+    }
+
+    public void setPesoInicial(Double pesoInicial) {
+        this.pesoInicial = pesoInicial;
+    }
+
+    public Double getPesoFinal() {
+        return pesoFinal;
+    }
+
+    public void setPesoFinal(Double pesoFinal) {
+        this.pesoFinal = pesoFinal;
+    }
+
+    public Integer getRpe() {
+        return rpe;
+    }
+
+    public void setRpe(Integer rpe) {
+        this.rpe = rpe;
+    }
+
+    public Integer getCorUrina() {
+        return corUrina;
+    }
+
+    public void setCorUrina(Integer corUrina) {
+        this.corUrina = corUrina;
+    }
+
+    public String getSintomas() {
+        return sintomas;
+    }
+
+    public void setSintomas(String sintomas) {
+        this.sintomas = sintomas;
+    }
+
+    public String getTipoTreino() {
+        return tipoTreino;
+    }
+
+    public void setTipoTreino(String tipoTreino) {
+        this.tipoTreino = tipoTreino;
     }
 
     public String getStatus() {

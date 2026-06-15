@@ -240,80 +240,89 @@ class _TelaHistoricoState extends State<TelaHistorico> {
   }
 
   Widget _buildSessionCard(SessaoHistorico sessao) {
-    return Container(
-      height: 74,
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border(left: BorderSide(color: sessao.accentColor, width: 3)),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 14),
-          Container(
-            height: 38,
-            width: 38,
-            decoration: BoxDecoration(
-              color: _surfaceLight,
-              borderRadius: BorderRadius.circular(6),
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).pushNamed(
+          AppRotas.detalhesSessao,
+          arguments: sessao.id,
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 74,
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(left: BorderSide(color: sessao.accentColor, width: 3)),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 14),
+            Container(
+              height: 38,
+              width: 38,
+              decoration: BoxDecoration(
+                color: _surfaceLight,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(sessao.icon, color: sessao.accentColor, size: 20),
             ),
-            child: Icon(sessao.icon, color: sessao.accentColor, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sessao.dataLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _muted,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sessao.dataLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _muted,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  sessao.titulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
+                  const SizedBox(height: 3),
+                  Text(
+                    sessao.titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _text,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  sessao.subtitulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _text,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                  const SizedBox(height: 3),
+                  Text(
+                    sessao.subtitulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _text,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${sessao.SudoreseLitrosHora.toStringAsFixed(2)} L',
-            style: const TextStyle(
-              color: _text,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+            const SizedBox(width: 12),
+            Text(
+              '${sessao.SudoreseLitrosHora.toStringAsFixed(2)} L',
+              style: const TextStyle(
+                color: _text,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-        ],
+            const SizedBox(width: 14),
+          ],
+        ),
       ),
     );
   }

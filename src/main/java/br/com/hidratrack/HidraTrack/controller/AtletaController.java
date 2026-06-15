@@ -332,6 +332,9 @@ public class AtletaController {
             if (dados.get("metaDiaria") instanceof String metaDiaria && !metaDiaria.isBlank()) {
                 usuarioAtual.setMetaDiaria(metaDiaria.trim());
             }
+            if (dados.get("genero") instanceof String genero && !genero.isBlank()) {
+                usuarioAtual.setGenero(genero.trim());
+            }
 
             final Usuario usuarioSalvo = usuarioService.salvar(usuarioAtual);
             return ResponseEntity.ok(construirPerfil(usuarioSalvo));

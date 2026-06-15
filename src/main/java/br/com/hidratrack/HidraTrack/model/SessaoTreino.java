@@ -27,6 +27,18 @@ public class SessaoTreino {
 
     private Integer umidadeRelativa;
 
+    private Double pesoInicial;
+
+    private Double pesoFinal;
+
+    private Integer rpe;
+
+    private Integer corUrina;
+
+    private String sintomas;
+
+    private String tipoTreino;
+
     @Enumerated(EnumType.STRING)
     private StatusSessao status = StatusSessao.EM_ANDAMENTO;
 
@@ -101,6 +113,54 @@ public class SessaoTreino {
 
     public void setUmidadeRelativa(Integer umidadeRelativa) {
         this.umidadeRelativa = umidadeRelativa;
+    }
+
+    public Double getPesoInicial() {
+        return pesoInicial;
+    }
+
+    public void setPesoInicial(Double pesoInicial) {
+        this.pesoInicial = pesoInicial;
+    }
+
+    public Double getPesoFinal() {
+        return pesoFinal;
+    }
+
+    public void setPesoFinal(Double pesoFinal) {
+        this.pesoFinal = pesoFinal;
+    }
+
+    public Integer getRpe() {
+        return rpe;
+    }
+
+    public void setRpe(Integer rpe) {
+        this.rpe = rpe;
+    }
+
+    public Integer getCorUrina() {
+        return corUrina;
+    }
+
+    public void setCorUrina(Integer corUrina) {
+        this.corUrina = corUrina;
+    }
+
+    public String getSintomas() {
+        return sintomas;
+    }
+
+    public void setSintomas(String sintomas) {
+        this.sintomas = sintomas;
+    }
+
+    public String getTipoTreino() {
+        return tipoTreino;
+    }
+
+    public void setTipoTreino(String tipoTreino) {
+        this.tipoTreino = tipoTreino;
     }
 
     public StatusSessao getStatus() {

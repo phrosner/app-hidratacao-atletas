@@ -23,7 +23,10 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
 
+  String? _generoSelect;
   bool _salvando = false;
+
+  final List<String> generos = ['Masculino', 'Feminino', 'Outro'];
 
   @override
   void dispose() {
@@ -68,6 +71,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
     final dataNascimento = _dataController.text.trim();
     final peso = double.tryParse(_pesoController.text.replaceAll(',', '.'));
     final altura = int.tryParse(_alturaController.text.trim());
+    final genero = _generoSelect ?? 'Outro';
 
     if (nome.isEmpty) {
       _mostrarMensagem('Informe o nome do atleta.');
@@ -109,6 +113,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
         dataNascimento: dataNascimento,
         peso: peso,
         altura: altura,
+        genero: genero,
       );
 
       if (!mounted) return;
@@ -261,6 +266,11 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
             ),
           ),
           const SizedBox(height: 24),
+          _buildFieldBlock(
+            label: 'GENERO',
+            child: _buildGenderDropdown(),
+          ),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -384,6 +394,44 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildGenderDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _generoSelect,
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      icon: const Icon(Icons.keyboard_arrow_down, color: _muted, size: 20),
+      style: const TextStyle(color: _text, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Selecione',
+        hintStyle: const TextStyle(color: _muted, fontSize: 14),
+        suffixIcon: const Icon(Icons.person_outline, color: _muted, size: 18),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: BorderSide(color: _lime.withValues(alpha: 0.36)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: const BorderSide(color: _lime),
+        ),
+      ),
+      items: generos
+          .map(
+            (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item, overflow: TextOverflow.ellipsis),
+            ),
+          )
+          .toList(),
+      onChanged: (value) => setState(() => _generoSelect = value),
     );
   }
 }
