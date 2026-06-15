@@ -20,9 +20,10 @@ class AtletaService {
   /// Obter dados do dashboard do atleta autenticado
   static Future<Map<String, dynamic>> obterDashboardAtleta({
     required String token,
+    http.Client? client,
   }) async {
     try {
-      final response = await http.get(
+      final response = await (client ?? http.Client()).get(
         Uri.parse('$_baseUrl/atletas/dashboard'),
         headers: {
           'Content-Type': 'application/json',
@@ -236,9 +237,10 @@ class AtletaService {
     required String token,
     required double mlConsumidos,
     required DateTime dataHora,
+    http.Client? client,
   }) async {
     try {
-      final response = await http.post(
+      final response = await (client ?? http.Client()).post(
         Uri.parse('$_baseUrl/atletas/consumo'),
         headers: {
           'Content-Type': 'application/json',

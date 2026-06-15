@@ -1,21 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'dart:convert';
-
-// Mock do cliente HTTP
-class MockHttpClient extends Mock implements http.Client {}
 
 void main() {
   group('AtletaService Tests', () {
-    late MockHttpClient mockHttpClient;
-
-    setUp(() {
-      mockHttpClient = MockHttpClient();
-    });
-
     test('obterDashboardAtleta retorna dados corretamente', () async {
-      // Arrange - Preparar o mock
       const String token = 'test_token_123';
       final mockResponse = http.Response(
         jsonEncode({
@@ -30,21 +21,28 @@ void main() {
         headers: {'content-type': 'application/json; charset=utf-8'},
       );
 
-      when(mockHttpClient.get(
-        any,
-        headers: anyNamed('headers'),
-      )).thenAnswer((_) async => mockResponse);
+      late http.Request sentRequest;
+      final mockClient = MockClient((http.Request request) async {
+        sentRequest = request;
+        return mockResponse;
+      });
 
-      // Act - Executar (você precisará modificar AtletaService para aceitar httpClient)
-      // final data = await AtletaService.obterDashboardAtleta(token: token, httpClient: mockHttpClient);
+      final data = await AtletaService.obterDashboardAtleta(
+        token: token,
+        client: mockClient,
+      );
 
-      // Assert - Verificar
-      // expect(data['nomeAtleta'], 'Ricardo Silva');
-      // expect(data['taxaSuor'], 1.2);
+      expect(data['nomeAtleta'], 'Ricardo Silva');
+      expect(data['taxaSuor'], 1.2);
+      expect(data['hidratacaoRecomendada'], 2.4);
+      expect(data['percentualConsumido'], 45.0);
+      expect(sentRequest.method, 'GET');
+      expect(sentRequest.url.path, '/api/atletas/dashboard');
+      expect(sentRequest.url.scheme, 'http');
+      expect(sentRequest.headers['Authorization'], 'Bearer $token');
     });
 
     test('registrarConsumo envia dados corretos', () async {
-      // Arrange
       const String token = 'test_token_123';
       const double mlConsumidos = 500.0;
       final dataHora = DateTime.now().toIso8601String();
@@ -59,29 +57,45 @@ void main() {
         headers: {'content-type': 'application/json; charset=utf-8'},
       );
 
-      when(mockHttpClient.post(
-        any,
-        headers: anyNamed('headers'),
-        body: anyNamed('body'),
-      )).thenAnswer((_) async => mockResponse);
+      late http.Request sentRequest;
+      final mockClient = MockClient((http.Request request) async {
+        sentRequest = request;
+        return mockResponse;
+      });
 
-      // Act & Assert
-      print('✓ Teste de registrarConsumo simulado');
+      final result = await AtletaService.registrarConsumo(
+        token: token,
+        mlConsumidos: mlConsumidos,
+        dataHora: DateTime.parse(dataHora),
+        client: mockClient,
+      );
+
+      expect(result, isTrue);
+      expect(sentRequest.method, 'POST');
+      expect(sentRequest.url.path, '/api/atletas/consumo');
+      expect(sentRequest.url.scheme, 'http');
+      expect(sentRequest.headers['Authorization'], 'Bearer $token');
+      expect(jsonDecode(sentRequest.body), {
+        'mlConsumidos': mlConsumidos,
+        'dataHora': dataHora,
+      });
     });
 
     test('tratamento de erro 401 - token inválido', () async {
-      // Arrange
       const String tokenInvalido = 'invalid_token';
       final mockResponse = http.Response('Unauthorized', 401);
 
-      when(mockHttpClient.get(
-        any,
-        headers: anyNamed('headers'),
-      )).thenAnswer((_) async => mockResponse);
+      final mockClient = MockClient((http.Request request) async {
+        return mockResponse;
+      });
 
-      // Assert
-      expect(mockResponse.statusCode, 401);
-      print('✓ Erro 401 tratado corretamente');
+      expect(
+        () async => await AtletaService.obterDashboardAtleta(
+          token: tokenInvalido,
+          client: mockClient,
+        ),
+        throwsA(isA<Exception>()),
+      );
     });
   });
 }
