@@ -9,6 +9,7 @@ class Equipe {
   final String? modalidade;
   final String? descricao;
   final List<int>? atletasIds;
+  final List<String>? atletasPreview;
 
   Equipe({
     required this.id,
@@ -21,6 +22,7 @@ class Equipe {
     this.modalidade,
     this.descricao,
     this.atletasIds,
+    this.atletasPreview,
   });
 
   factory Equipe.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,9 @@ class Equipe {
       modalidade: json['modalidade'],
       descricao: json['descricao'],
       atletasIds: List<int>.from(json['atletasIds'] ?? []),
+      atletasPreview: json['atletasPreview'] != null
+          ? List<String>.from(json['atletasPreview'])
+          : null,
     );
   }
 

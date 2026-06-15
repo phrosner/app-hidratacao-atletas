@@ -7,6 +7,7 @@ import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
 import br.com.hidratrack.HidraTrack.model.SessaoTreino;
 import br.com.hidratrack.HidraTrack.model.Usuario;
 import br.com.hidratrack.HidraTrack.repository.ConsumoAguaRepository;
+import br.com.hidratrack.HidraTrack.repository.EquipeAtletaRepository;
 import br.com.hidratrack.HidraTrack.repository.SessaoTreinoRepository;
 import br.com.hidratrack.HidraTrack.service.SessaoTreinoService;
 import br.com.hidratrack.HidraTrack.service.UsuarioService;
@@ -47,6 +48,9 @@ public class AtletaController {
 
     @Autowired
     private StatsService statsService;
+
+    @Autowired
+    private EquipeAtletaRepository equipeAtletaRepository;
 
     private Optional<Usuario> extrairUsuarioDoToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -346,9 +350,18 @@ public class AtletaController {
         perfil.put("peso", usuario.getPeso());
         perfil.put("altura", usuario.getAltura());
         perfil.put("idade", usuario.getIdade());
+        perfil.put("genero", usuario.getGenero());
+        perfil.put("dataNascimento", usuario.getDataNascimento());
         perfil.put("esporte", usuario.getEsporte());
         perfil.put("nivelTreino", usuario.getNivelTreino());
         perfil.put("metaDiaria", usuario.getMetaDiaria());
+
+        equipeAtletaRepository.findByAtletaId(usuario.getId()).stream().findFirst()
+                .ifPresent(vinculo -> {
+                    perfil.put("equipe", vinculo.getEquipe().getNome());
+                    perfil.put("categoria", vinculo.getEquipe().getCategoria());
+                });
+
         return perfil;
     }
 

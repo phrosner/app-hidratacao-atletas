@@ -1,6 +1,7 @@
 package br.com.hidratrack.HidraTrack.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "usuarios")
@@ -26,6 +27,11 @@ public class Usuario {
     private String esporte;
     private String nivelTreino;
     private String metaDiaria;
+
+    private String genero;
+
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
 
     public enum TipoUsuario {
         ATLETA,
@@ -137,5 +143,21 @@ public class Usuario {
 
     public void setMetaDiaria(String metaDiaria) {
         this.metaDiaria = metaDiaria;
+    }
+
+    public String getGenero() {
+        return genero;
+    }
+
+    public void setGenero(String genero) {
+        this.genero = genero;
+    }
+
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
     }
 }

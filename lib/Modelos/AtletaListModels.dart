@@ -19,7 +19,10 @@ class AtletaListItem {
       categoria: json['categoria'] ?? '',
       nome: json['nome'] ?? '',
       status: json['status'] ?? 'DESCANSO',
-      hidratacao: (json['hidratacao'] ?? 0).toInt(),
+      hidratacao: (json['hidratacao'] is num
+              ? json['hidratacao'] as num
+              : int.tryParse(json['hidratacao']?.toString() ?? '0') ?? 0)
+          .toInt(),
     );
   }
 

@@ -64,4 +64,12 @@ public class UsuarioService {
     public Optional<Usuario> buscarPorId(Long id) {
         return repository.findById(id);
     }
+
+    public Optional<Usuario> buscarPorUsuario(String usuario) {
+        return repository.findByUsuario(usuario);
+    }
+
+    public boolean usuarioExiste(String usuario) {
+        return repository.findByUsuario(usuario).isPresent();
+    }
 }

@@ -10,6 +10,8 @@ CREATE DATABASE IF NOT EXISTS hidratrack_db
 USE hidratrack_db;
 
 -- Tabelas criadas na ordem de dependências
+DROP TABLE IF EXISTS equipe_atletas;
+DROP TABLE IF EXISTS equipes;
 DROP TABLE IF EXISTS consumo_agua;
 DROP TABLE IF EXISTS stats_sessao;
 DROP TABLE IF EXISTS metricas_sudorese;
@@ -29,9 +31,39 @@ CREATE TABLE usuarios (
   esporte VARCHAR(100) DEFAULT NULL,
   nivel_treino VARCHAR(100) DEFAULT NULL,
   meta_diaria VARCHAR(255) DEFAULT NULL,
+  genero VARCHAR(50) DEFAULT NULL,
+  data_nascimento DATE DEFAULT NULL,
   ativo TINYINT(1) DEFAULT 1,
   PRIMARY KEY (id),
   UNIQUE KEY uk_usuario (usuario)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE equipes (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(255) NOT NULL,
+  codigo_equipe VARCHAR(20) NOT NULL,
+  categoria VARCHAR(100) DEFAULT NULL,
+  modalidade VARCHAR(100) DEFAULT NULL,
+  descricao TEXT DEFAULT NULL,
+  gestor_id BIGINT NOT NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_codigo_equipe (codigo_equipe),
+  KEY idx_equipe_gestor (gestor_id),
+  CONSTRAINT fk_equipe_gestor FOREIGN KEY (gestor_id) REFERENCES usuarios(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE equipe_atletas (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  equipe_id BIGINT NOT NULL,
+  atleta_id BIGINT NOT NULL,
+  vinculado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_equipe_atleta (equipe_id, atleta_id),
+  KEY idx_ea_equipe (equipe_id),
+  KEY idx_ea_atleta (atleta_id),
+  CONSTRAINT fk_ea_equipe FOREIGN KEY (equipe_id) REFERENCES equipes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_ea_atleta FOREIGN KEY (atleta_id) REFERENCES usuarios(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE sessoes_treino (
@@ -100,4 +132,10 @@ INSERT INTO usuarios (nome, email, senha, usuario, tipo_usuario, idade, altura, 
   ('Atleta Exemplo', 'atleta@example.com', 'senha123', 'atleta_exemplo', 'ATLETA', 24, 178, 72.5, 'Corrida', 'INTERMEDIARIO', 'Manter hidratação após treino', 1),
   ('Treinador Exemplo', 'treinador@example.com', 'senha123', 'treinador_exemplo', 'TREINADOR', NULL, NULL, NULL, NULL, NULL, NULL, 1),
   ('Nutricionista Exemplo', 'nutricionista@example.com', 'senha123', 'nutricionista_exemplo', 'NUTRICIONISTA', NULL, NULL, NULL, NULL, NULL, NULL, 1);
+
+-- Equipe de exemplo vinculada ao treinador (id=2) e atleta (id=1)
+INSERT INTO equipes (nome, codigo_equipe, categoria, modalidade, descricao, gestor_id) VALUES
+  ('Equipe Exemplo', 'HT-DEMO01', 'Sub-20', 'Corrida', 'Equipe de demonstracao para testes', 2);
+
+INSERT INTO equipe_atletas (equipe_id, atleta_id) VALUES (1, 1);
 

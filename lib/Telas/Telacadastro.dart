@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hidratrack/Servicos/EquipeService.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
+import 'package:hidratrack/Servicos/TreinadorService.dart';
 
 class TelaCadastroAtleta extends StatefulWidget {
   const TelaCadastroAtleta({super.key});
@@ -19,12 +20,10 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _codigoController = TextEditingController();
   final TextEditingController _dataController = TextEditingController();
-  final TextEditingController _pesoController = TextEditingController(
-    text: '75.0',
-  );
-  final TextEditingController _alturaController = TextEditingController(
-    text: '185',
-  );
+  final TextEditingController _pesoController = TextEditingController();
+  final TextEditingController _alturaController = TextEditingController();
+
+  bool _salvando = false;
 
   @override
   void dispose() {
@@ -67,6 +66,8 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
     final nome = _nomeController.text.trim();
     final codigoEquipe = _codigoController.text.trim().toUpperCase();
     final dataNascimento = _dataController.text.trim();
+    final peso = double.tryParse(_pesoController.text.replaceAll(',', '.'));
+    final altura = int.tryParse(_alturaController.text.trim());
 
     if (nome.isEmpty) {
       _mostrarMensagem('Informe o nome do atleta.');
@@ -83,21 +84,73 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
       return;
     }
 
+    if (peso == null || peso <= 0) {
+      _mostrarMensagem('Informe um peso válido.');
+      return;
+    }
+
+    if (altura == null || altura <= 0) {
+      _mostrarMensagem('Informe uma altura válida.');
+      return;
+    }
+
+    setState(() => _salvando = true);
+
     try {
-      final atletaId = await EquipeService.adicionarAtletaPorCodigoEquipe(
+      final valido = await TreinadorService.validarCodigoEquipe(codigoEquipe);
+      if (!valido) {
+        _mostrarMensagem('Código de equipe inválido.');
+        return;
+      }
+
+      final resultado = await TreinadorService.cadastrarAtleta(
+        nome: nome,
         codigoEquipe: codigoEquipe,
-        nomeAtleta: nome,
+        dataNascimento: dataNascimento,
+        peso: peso,
+        altura: altura,
       );
 
       if (!mounted) return;
-      _mostrarMensagem(
-        'Cadastro concluído! Atleta incluído na equipe $codigoEquipe (ID $atletaId).',
+
+      AuthStorage.token = resultado['token']?.toString() ?? '';
+      AuthStorage.nome = resultado['nome']?.toString() ?? nome;
+      AuthStorage.tipoUsuario = resultado['tipoUsuario']?.toString() ?? 'ATLETA';
+      AuthStorage.userId = (resultado['id'] as num?)?.toInt();
+
+      final senhaGerada = resultado['senhaGerada']?.toString();
+      final usuario = resultado['usuario']?.toString() ?? '';
+
+      if (senhaGerada != null) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Cadastro concluído'),
+            content: Text(
+              'Guarde seus dados de acesso:\n\nUsuário: $usuario\nSenha: $senhaGerada',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        '/dashboard-atleta',
+        arguments: AuthStorage.token,
       );
-      Navigator.pushReplacementNamed(context, '/dashboard-atleta');
     } catch (e) {
       _mostrarMensagem(
         'Erro no cadastro: ${e.toString().replaceAll("Exception: ", "")}',
       );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
     }
   }
 
@@ -311,7 +364,7 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
       width: double.infinity,
       height: 64,
       child: FilledButton.icon(
-        onPressed: _salvarCadastro,
+        onPressed: _salvando ? null : _salvarCadastro,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
           foregroundColor: Colors.white,

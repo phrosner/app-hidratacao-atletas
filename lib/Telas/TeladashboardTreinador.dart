@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
+import 'package:hidratrack/Servicos/TreinadorService.dart';
 import 'package:hidratrack/Telas/Telacadastro.dart';
 import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
@@ -29,106 +31,64 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   static const _danger = Color(0xFFB32025);
 
   late int _selectedTab;
-  bool _carregandoClima = true;
+  bool _carregando = true;
+  String? _erro;
   ClimaDados? _climaDados;
+  String _crescimentoAtletas = '+0%';
+  int _totalAtletas = 0;
 
-  late final List<Equipe> _equipes;
-  late final List<AtletaListItem> _atletas;
-  late final List<Atleta> _alertas;
+  List<Equipe> _equipes = [];
+  List<AtletaListItem> _atletas = [];
+  List<Atleta> _alertas = [];
 
   @override
   void initState() {
     super.initState();
     _selectedTab = widget.initialTab;
-    _equipes = [
-      Equipe(
-        id: 1,
-        nome: 'Equipe Sub-20',
-        status: 'FUTEBOL MASCULINO',
-        numeroAtletas: 22,
-        percentualHidratacao: 94,
-        codigoEquipe: 'HT-AAAA01',
-      ),
-      Equipe(
-        id: 2,
-        nome: 'Equipe Olimpica',
-        status: 'NATACAO',
-        numeroAtletas: 8,
-        percentualHidratacao: 81,
-        codigoEquipe: 'HT-AAAA02',
-      ),
-      Equipe(
-        id: 3,
-        nome: 'Base Feminina',
-        status: 'FUTEBOL FEMININO',
-        numeroAtletas: 16,
-        percentualHidratacao: 76,
-        codigoEquipe: 'HT-AAAA03',
-      ),
-    ];
-    _atletas = [
-      AtletaListItem(
-        id: 1,
-        categoria: 'SUB-20',
-        nome: 'Carlos Silva',
-        status: 'DESIDRATACAO CRITICA',
-        hidratacao: 4,
-      ),
-      AtletaListItem(
-        id: 2,
-        categoria: 'OLIMPICO',
-        nome: 'Gabriel Santos',
-        status: 'EM TREINO',
-        hidratacao: 85,
-      ),
-      AtletaListItem(
-        id: 3,
-        categoria: 'SUB-17',
-        nome: 'Lucas Ferreira',
-        status: 'ATENCAO',
-        hidratacao: 62,
-      ),
-      AtletaListItem(
-        id: 4,
-        categoria: 'MASTER',
-        nome: 'Rodrigo Silva',
-        status: 'DESCANSO',
-        hidratacao: 88,
-      ),
-    ];
-    _alertas = [
-      Atleta(
-        id: 1,
-        nome: 'Carlos Silva (Sub-20)',
-        situacao: 'Desidratacao critica',
-        descricao: '4% perda',
-        iconType: IconType.alerta,
-      ),
-    ];
-    _carregarClima();
+    _carregarDashboard();
   }
 
-  Future<void> _carregarClima() async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
+  Future<void> _carregarDashboard() async {
     setState(() {
-      _climaDados = ClimaDados(
-        temperatura: 31,
-        umidade: 42,
-        condicao: 'SP, BR - Seco',
-      );
-      _carregandoClima = false;
+      _carregando = true;
+      _erro = null;
     });
+
+    try {
+      final dados = await TreinadorService.obterDashboard();
+      if (!mounted) return;
+
+      final clima = dados['clima'] as Map<String, dynamic>? ?? {};
+      setState(() {
+        _totalAtletas = (dados['totalAtletas'] as num?)?.toInt() ?? 0;
+        _crescimentoAtletas = dados['crescimentoAtletas']?.toString() ?? '+0%';
+        _climaDados = ClimaDados.fromJson(clima);
+        _equipes = (dados['equipes'] as List<dynamic>? ?? [])
+            .map((e) => Equipe.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _atletas = (dados['atletas'] as List<dynamic>? ?? [])
+            .map((a) => AtletaListItem.fromJson(a as Map<String, dynamic>))
+            .toList();
+        _alertas = (dados['alertas'] as List<dynamic>? ?? [])
+            .map((a) => Atleta.fromJson(a as Map<String, dynamic>))
+            .toList();
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _erro = e.toString().replaceAll('Exception: ', '');
+        _carregando = false;
+      });
+    }
   }
 
-  int get _totalAtletas =>
-      _equipes.fold<int>(0, (total, equipe) => total + equipe.numeroAtletas);
-
-  void _acaoPrincipal() {
+  void _acaoPrincipal() async {
     if (_selectedTab == 0) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (context) => const TelacriarEquipe()));
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const TelacriarEquipe()),
+      );
+      _carregarDashboard();
       return;
     }
 
@@ -136,7 +96,10 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   }
 
   void _mostrarPopupCadastroAtleta() {
-    const linkUrl = 'https://hidratrack.app/cadastro-atleta';
+    final codigos = _equipes.map((e) => e.codigoEquipe).toList();
+    final textoCompartilhar = codigos.isEmpty
+        ? 'Cadastre-se no H2OTRACK usando o código da equipe fornecido pelo treinador.'
+        : 'Cadastre-se no H2OTRACK usando um destes códigos de equipe:\n${codigos.join('\n')}';
 
     showDialog(
       context: context,
@@ -156,12 +119,9 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
               ),
             ),
             const SizedBox(height: 16),
-            const SelectableText(
-              linkUrl,
-              style: TextStyle(
-                color: _cyan,
-                decoration: TextDecoration.underline,
-              ),
+            SelectableText(
+              textoCompartilhar,
+              style: const TextStyle(color: _cyan, height: 1.4),
             ),
             const SizedBox(height: 18),
             Row(
@@ -172,12 +132,12 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
                       await Clipboard.setData(
-                        const ClipboardData(text: linkUrl),
+                        ClipboardData(text: textoCompartilhar),
                       );
                       if (!dialogContext.mounted || !context.mounted) return;
                       Navigator.of(dialogContext).pop();
                       messenger.showSnackBar(
-                        const SnackBar(content: Text('Link copiado')),
+                        const SnackBar(content: Text('Texto copiado')),
                       );
                     },
                     child: const Text(
@@ -193,8 +153,9 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                       foregroundColor: _text,
                       side: const BorderSide(color: _muted),
                     ),
-                    onPressed: () =>
-                        SharePlus.instance.share(ShareParams(text: linkUrl)),
+                    onPressed: () => SharePlus.instance.share(
+                      ShareParams(text: textoCompartilhar),
+                    ),
                     child: const Text('ENVIAR'),
                   ),
                 ),
@@ -240,40 +201,74 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                 ? 520.0
                 : double.infinity;
 
+            if (_carregando) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (_erro != null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_erro!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: _carregarDashboard,
+                        child: const Text('Tentar novamente'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             return Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: contentWidth),
-                child: CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        14,
-                        horizontalPadding,
-                        24,
+                child: RefreshIndicator(
+                  onRefresh: _carregarDashboard,
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          14,
+                          horizontalPadding,
+                          24,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            _buildHeader(),
+                            const SizedBox(height: 22),
+                            _buildMetricCards(),
+                            const SizedBox(height: 22),
+                            _buildTabs(),
+                            const SizedBox(height: 14),
+                            if (_selectedTab == 0)
+                              if (_equipes.isEmpty)
+                                _buildEmptyState('Nenhuma equipe cadastrada')
+                              else
+                                ..._equipes.map(_buildEquipeCard)
+                            else if (_atletas.isEmpty)
+                              _buildEmptyState('Nenhum atleta vinculado')
+                            else
+                              ..._atletas.map(_buildAtletaCard),
+                            const SizedBox(height: 16),
+                            _buildSectionTitle('ALERTAS RECENTES'),
+                            const SizedBox(height: 10),
+                            if (_alertas.isEmpty)
+                              _buildEmptyState('Nenhum alerta no momento')
+                            else
+                              ..._alertas.map(_buildAlertaCard),
+                            const SizedBox(height: 64),
+                          ]),
+                        ),
                       ),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          _buildHeader(),
-                          const SizedBox(height: 22),
-                          _buildMetricCards(),
-                          const SizedBox(height: 22),
-                          _buildTabs(),
-                          const SizedBox(height: 14),
-                          if (_selectedTab == 0)
-                            ..._equipes.map(_buildEquipeCard)
-                          else
-                            ..._atletas.map(_buildAtletaCard),
-                          const SizedBox(height: 16),
-                          _buildSectionTitle('ALERTAS RECENTES'),
-                          const SizedBox(height: 10),
-                          ..._alertas.map(_buildAlertaCard),
-                          const SizedBox(height: 64),
-                        ]),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -283,11 +278,28 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
     );
   }
 
+  Widget _buildEmptyState(String message) {
+    return Container(
+      height: 88,
+      margin: const EdgeInsets.only(bottom: 14),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(message, style: const TextStyle(color: _muted, fontSize: 12)),
+    );
+  }
+
   Widget _buildHeader() {
+    final titulo = AuthStorage.tipoUsuario == 'NUTRICIONISTA'
+        ? 'Painel do Nutricionista'
+        : 'Painel do Treinador';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Text(
+      children: [
+        const Text(
           'H2OTRACK',
           style: TextStyle(
             color: _text,
@@ -295,8 +307,8 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        SizedBox(height: 34),
-        Text(
+        const SizedBox(height: 34),
+        const Text(
           'DASHBOARD',
           style: TextStyle(
             color: _lime,
@@ -305,10 +317,10 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
             letterSpacing: 2,
           ),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
-          'Painel do Treinador',
-          style: TextStyle(
+          titulo,
+          style: const TextStyle(
             color: _text,
             fontSize: 24,
             fontWeight: FontWeight.w800,
@@ -326,7 +338,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
           child: _MetricCard(
             label: 'Atletas Ativos',
             value: _totalAtletas.toString().padLeft(2, '0'),
-            accent: '+12%',
+            accent: _crescimentoAtletas,
             accentColor: _lime,
             icon: Icons.groups_2_outlined,
           ),
@@ -335,10 +347,10 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         Expanded(
           child: _MetricCard(
             label: 'Clima Local',
-            value: _carregandoClima
-                ? '--'
-                : '${_climaDados!.temperatura.toStringAsFixed(0)}C',
-            accent: _carregandoClima ? 'carregando' : _climaDados!.condicao,
+            value: _climaDados != null
+                ? '${_climaDados!.temperatura.toStringAsFixed(0)}C'
+                : '--',
+            accent: _climaDados?.condicao ?? 'Sem dados',
             accentColor: _muted,
             icon: Icons.cloud_outlined,
           ),
@@ -403,17 +415,17 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   }
 
   Widget _buildEquipeCard(Equipe equipe) {
-    final isPrimary = equipe.id == 1;
-    final accent = isPrimary ? _lime : _cyan;
+    final accent = _lime;
 
     return InkWell(
       borderRadius: BorderRadius.circular(7),
-      onTap: () {
-        Navigator.of(context).push(
+      onTap: () async {
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => TeladadosEquipe(equipe: equipe),
           ),
         );
+        _carregarDashboard();
       },
       child: Container(
         height: 166,
@@ -478,7 +490,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
             const Spacer(),
             Row(
               children: [
-                _buildAvatarStrip(equipe.id),
+                _buildAvatarStrip(equipe),
                 const Spacer(),
                 Icon(Icons.chevron_right, color: accent, size: 24),
               ],
@@ -612,7 +624,8 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
     );
   }
 
-  Widget _buildAvatarStrip(int seed) {
+  Widget _buildAvatarStrip(Equipe equipe) {
+    final preview = equipe.atletasPreview ?? [];
     final colors = [
       const Color(0xFF1E5D66),
       const Color(0xFF263A68),
@@ -620,25 +633,31 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
       const Color(0xFF303030),
     ];
 
+    if (preview.isEmpty) {
+      return const SizedBox(height: 26, width: 26);
+    }
+
+    final extra = equipe.numeroAtletas - preview.length;
+
     return SizedBox(
       height: 26,
       width: 92,
       child: Stack(
         children: [
-          for (var i = 0; i < 3; i++)
+          for (var i = 0; i < preview.length && i < 3; i++)
             Positioned(
               left: i * 18,
               child: Container(
                 height: 26,
                 width: 26,
                 decoration: BoxDecoration(
-                  color: colors[(i + seed) % colors.length],
+                  color: colors[i % colors.length],
                   shape: BoxShape.circle,
                   border: Border.all(color: _surface, width: 2),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  String.fromCharCode(65 + seed + i),
+                  preview[i].characters.first.toUpperCase(),
                   style: const TextStyle(
                     color: _text,
                     fontSize: 9,
@@ -647,27 +666,28 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                 ),
               ),
             ),
-          Positioned(
-            left: 54,
-            child: Container(
-              height: 26,
-              width: 32,
-              decoration: BoxDecoration(
-                color: const Color(0xFF343434),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _surface, width: 2),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '+${seed == 1 ? 19 : 6}',
-                style: const TextStyle(
-                  color: _text,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
+          if (extra > 0)
+            Positioned(
+              left: 54,
+              child: Container(
+                height: 26,
+                width: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF343434),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _surface, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '+$extra',
+                  style: const TextStyle(
+                    color: _text,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -675,6 +695,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
 
   Widget _buildAlertaCard(Atleta alerta) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surface,
@@ -742,7 +763,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
       ),
     );
   }
-
 }
 
 class _MetricCard extends StatelessWidget {

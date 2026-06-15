@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
+import 'package:hidratrack/Servicos/TreinadorService.dart';
 
 class TeladadosEquipe extends StatefulWidget {
   const TeladadosEquipe({super.key, this.equipe});
@@ -26,6 +28,9 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
 
   String? _categoriaSelect;
   String? _modalidadeSelect;
+  bool _carregando = true;
+  bool _salvando = false;
+  String? _codigoEquipe;
 
   final List<String> categorias = [
     'Profissional',
@@ -45,28 +50,53 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     'Atletismo',
   ];
 
-  final List<Map<String, String>> _atletas = [
-    {'nome': 'Marcus V. Silva', 'categoria': 'ELITE PERFORMER'},
-    {'nome': 'Elena Rodrigues', 'categoria': 'POWER LIFTER'},
-    {'nome': 'Ricardo Neves', 'categoria': 'ENDURANCE PRO'},
-  ];
-
-  late List<Map<String, String>> _atletasFiltrados;
+  List<Map<String, dynamic>> _atletas = [];
+  List<Map<String, dynamic>> _atletasFiltrados = [];
+  List<Map<String, dynamic>> _resultadosBusca = [];
 
   @override
   void initState() {
     super.initState();
-    final equipe = widget.equipe;
+    _carregarEquipe();
+  }
 
-    _nomeController.text = equipe?.nome ?? 'Alpha Warriors Elite';
-    _descricaoController.text =
-        equipe?.descricao ??
-        'Equipe focada em alto rendimento e competicoes nacionais de endurance. Estrategia baseada em ciclos de intensidade progressiva.';
-    _categoriaSelect =
-        _normalizarValor(equipe?.categoria, categorias) ?? 'Profissional';
-    _modalidadeSelect =
-        _normalizarValor(equipe?.modalidade, modalidades) ?? 'CrossFit';
-    _atletasFiltrados = List.of(_atletas);
+  Future<void> _carregarEquipe() async {
+    final equipeId = widget.equipe?.id;
+    if (equipeId == null) {
+      setState(() => _carregando = false);
+      return;
+    }
+
+    try {
+      final detalhe = await TreinadorService.obterEquipeDetalhe(equipeId);
+      if (!mounted) return;
+
+      _nomeController.text = detalhe['nome']?.toString() ?? '';
+      _descricaoController.text = detalhe['descricao']?.toString() ?? '';
+      _codigoEquipe = detalhe['codigoEquipe']?.toString();
+      _categoriaSelect =
+          _normalizarValor(detalhe['categoria']?.toString(), categorias) ??
+              categorias.first;
+      _modalidadeSelect =
+          _normalizarValor(detalhe['modalidade']?.toString(), modalidades) ??
+              modalidades.first;
+
+      final atletas = (detalhe['atletas'] as List<dynamic>? ?? [])
+          .map((a) => Map<String, dynamic>.from(a as Map))
+          .toList();
+
+      setState(() {
+        _atletas = atletas;
+        _atletasFiltrados = List.of(atletas);
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _carregando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao carregar equipe: $e')),
+      );
+    }
   }
 
   String? _normalizarValor(String? value, List<String> options) {
@@ -84,51 +114,108 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
           ? List.of(_atletas)
           : _atletas
                 .where(
-                  (atleta) =>
-                      atleta['nome']!.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ) ||
-                      atleta['categoria']!.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ),
+                  (atleta) => atleta['nome']
+                      .toString()
+                      .toLowerCase()
+                      .contains(query.toLowerCase()),
                 )
                 .toList();
     });
   }
 
-  void _removerAtleta(Map<String, String> atleta) {
-    setState(() {
-      _atletas.remove(atleta);
-      final query = _searchController.text.toLowerCase();
-      _atletasFiltrados = query.isEmpty
-          ? List.of(_atletas)
-          : _atletas
-                .where(
-                  (item) =>
-                      item['nome']!.toLowerCase().contains(query) ||
-                      item['categoria']!.toLowerCase().contains(query),
-                )
-                .toList();
-    });
+  Future<void> _buscarNovosAtletas(String query) async {
+    final equipeId = widget.equipe?.id;
+    if (equipeId == null || query.trim().length < 2) {
+      setState(() => _resultadosBusca = []);
+      return;
+    }
+
+    try {
+      final resultados = await TreinadorService.buscarAtletasDisponiveis(
+        equipeId: equipeId,
+        query: query,
+      );
+      if (!mounted) return;
+      setState(() => _resultadosBusca = resultados);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _resultadosBusca = []);
+    }
   }
 
-  void _adicionarAtleta() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Busca de novos atletas em breve'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _removerAtleta(Map<String, dynamic> atleta) async {
+    final equipeId = widget.equipe?.id;
+    final atletaId = (atleta['id'] as num?)?.toInt();
+    if (equipeId == null || atletaId == null) return;
+
+    try {
+      await TreinadorService.removerAtletaDaEquipe(
+        equipeId: equipeId,
+        atletaId: atletaId,
+      );
+      await _carregarEquipe();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao remover atleta: $e')),
+      );
+    }
   }
 
-  void _salvarAlteracoes() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Alteracoes salvas com sucesso'),
-        backgroundColor: _lime,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _adicionarAtleta(Map<String, dynamic> atleta) async {
+    final equipeId = widget.equipe?.id;
+    final atletaId = (atleta['id'] as num?)?.toInt();
+    if (equipeId == null || atletaId == null) return;
+
+    try {
+      await TreinadorService.adicionarAtletaNaEquipe(
+        equipeId: equipeId,
+        atletaId: atletaId,
+      );
+      _searchController.clear();
+      setState(() => _resultadosBusca = []);
+      await _carregarEquipe();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Atleta adicionado à equipe')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao adicionar atleta: $e')),
+      );
+    }
+  }
+
+  Future<void> _salvarAlteracoes() async {
+    final equipeId = widget.equipe?.id;
+    if (equipeId == null) return;
+
+    setState(() => _salvando = true);
+    try {
+      await TreinadorService.atualizarEquipe(
+        id: equipeId,
+        nome: _nomeController.text.trim(),
+        categoria: _categoriaSelect ?? categorias.first,
+        modalidade: _modalidadeSelect ?? modalidades.first,
+        descricao: _descricaoController.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Alterações salvas com sucesso'),
+          backgroundColor: _lime,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao salvar: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
   }
 
   @override
@@ -141,6 +228,13 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
 
   @override
   Widget build(BuildContext context) {
+    if (_carregando) {
+      return const Scaffold(
+        backgroundColor: _background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
@@ -155,6 +249,17 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildTopBar(),
+                      if (_codigoEquipe != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Código: $_codigoEquipe',
+                          style: const TextStyle(
+                            color: _lime,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 20),
                       _buildSectionTitle('DADOS DA EQUIPE'),
                       const SizedBox(height: 10),
@@ -164,6 +269,8 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
                       const SizedBox(height: 10),
                       _buildRecruitmentActions(),
                       const SizedBox(height: 14),
+                      if (_resultadosBusca.isNotEmpty)
+                        ..._resultadosBusca.map(_buildResultadoBusca),
                       if (_atletasFiltrados.isEmpty)
                         _buildEmptyState()
                       else
@@ -184,6 +291,16 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
   }
 
   Widget _buildTopBar() {
+    final initials = AuthStorage.nome.isNotEmpty
+        ? AuthStorage.nome
+              .trim()
+              .split(RegExp(r'\s+'))
+              .map((p) => p.characters.first)
+              .take(2)
+              .join()
+              .toUpperCase()
+        : 'TR';
+
     return Row(
       children: [
         IconButton(
@@ -212,9 +329,9 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
             border: Border.all(color: _cyan.withValues(alpha: 0.5)),
           ),
           alignment: Alignment.center,
-          child: const Text(
-            'TR',
-            style: TextStyle(
+          child: Text(
+            initials,
+            style: const TextStyle(
               color: _lime,
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -327,28 +444,76 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
   Widget _buildRecruitmentActions() {
     return Row(
       children: [
-        Expanded(child: _buildSearchBar()),
-        const SizedBox(width: 8),
-        SizedBox(
-          height: 44,
-          child: FilledButton.icon(
-            onPressed: _adicionarAtleta,
-            style: FilledButton.styleFrom(
-              backgroundColor: _lime,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        Expanded(
+          child: SizedBox(
+            height: 44,
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                _filtrarAtletas(value);
+                _buscarNovosAtletas(value);
+              },
+              style: const TextStyle(color: _text, fontSize: 12),
+              decoration: InputDecoration(
+                hintText: 'Buscar novo atleta...',
+                hintStyle: const TextStyle(color: _muted, fontSize: 12),
+                prefixIcon: const Icon(Icons.search, color: _text, size: 18),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.zero,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(7),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.16),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(7),
+                  borderSide: const BorderSide(color: _lime),
+                ),
               ),
-            ),
-            icon: const Icon(Icons.add, size: 17),
-            label: const Text(
-              'ADICIONAR',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildResultadoBusca(Map<String, dynamic> atleta) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _lime.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  atleta['nome']?.toString() ?? '',
+                  style: const TextStyle(
+                    color: _text,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'De: ${atleta['equipeOrigem'] ?? ''}',
+                  style: const TextStyle(color: _muted, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _adicionarAtleta(atleta),
+            child: const Text('ADICIONAR'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -432,33 +597,6 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return SizedBox(
-      height: 44,
-      child: TextField(
-        controller: _searchController,
-        onChanged: _filtrarAtletas,
-        style: const TextStyle(color: _text, fontSize: 12),
-        decoration: InputDecoration(
-          hintText: 'Buscar novo atleta...',
-          hintStyle: const TextStyle(color: _muted, fontSize: 12),
-          prefixIcon: const Icon(Icons.search, color: _text, size: 18),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: EdgeInsets.zero,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(7),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(7),
-            borderSide: const BorderSide(color: _lime),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Container(
       height: 88,
@@ -468,15 +606,19 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Text(
-        'Nenhum atleta encontrado',
+        'Nenhum atleta na equipe',
         style: TextStyle(color: _muted, fontSize: 12),
       ),
     );
   }
 
-  Widget _buildAtletaItem(Map<String, String> atleta, int index) {
+  Widget _buildAtletaItem(Map<String, dynamic> atleta, int index) {
     final accents = [_lime, _cyan, const Color(0xFF00A884)];
     final accent = accents[index % accents.length];
+    final nome = atleta['nome']?.toString() ?? '';
+    final categoria = atleta['categoria']?.toString() ??
+        atleta['nivelTreino']?.toString() ??
+        '';
 
     return Container(
       height: 88,
@@ -499,7 +641,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
             ),
             alignment: Alignment.center,
             child: Text(
-              _initials(atleta['nome']!),
+              _initials(nome),
               style: TextStyle(
                 color: accent,
                 fontSize: 14,
@@ -514,7 +656,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  atleta['nome']!,
+                  nome,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -525,7 +667,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  atleta['categoria']!,
+                  categoria.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -550,6 +692,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
 
   String _initials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
     return '${parts.first.characters.first}${parts.last.characters.first}'
         .toUpperCase();
@@ -560,13 +703,22 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
       width: double.infinity,
       height: 54,
       child: FilledButton.icon(
-        onPressed: _salvarAlteracoes,
+        onPressed: _salvando ? null : _salvarAlteracoes,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
         ),
-        icon: const Icon(Icons.save_outlined, size: 18),
+        icon: _salvando
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.save_outlined, size: 18),
         label: const Text(
           'SALVAR ALTERACOES',
           style: TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
+import 'package:hidratrack/Servicos/TreinadorService.dart';
 
 class TelaVisualizarAtletas extends StatefulWidget {
   const TelaVisualizarAtletas({super.key, this.atleta});
@@ -29,8 +30,9 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
 
   String? _generoSelect;
   String? _nivelSelect;
+  bool _carregando = true;
 
-  final List<String> generos = ['Masculino', 'Feminino'];
+  final List<String> generos = ['Masculino', 'Feminino', 'Nao informado'];
   final List<String> niveis = [
     'Iniciante',
     'Intermediario',
@@ -41,17 +43,45 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
   @override
   void initState() {
     super.initState();
-    final atleta = widget.atleta;
+    _carregarAtleta();
+  }
 
-    _nomeController.text = atleta?.nome ?? 'Ricardo Santos Oliveira';
-    _idadeController.text = '24';
-    _modalidadeController.text = 'Crossfit / Levantamento de Peso';
-    _equipeController.text = 'Powerlifting Team';
-    _categoriaController.text = atleta?.categoria ?? 'Alpha Performance';
-    _pesoController.text = '88.5';
-    _alturaController.text = '184';
-    _generoSelect = generos.first;
-    _nivelSelect = 'Avancado';
+  Future<void> _carregarAtleta() async {
+    final atletaId = widget.atleta?.id;
+    if (atletaId == null) {
+      setState(() => _carregando = false);
+      return;
+    }
+
+    try {
+      final detalhe = await TreinadorService.obterAtletaDetalhe(atletaId);
+      if (!mounted) return;
+
+      _nomeController.text = detalhe['nome']?.toString() ?? '';
+      _idadeController.text = detalhe['idade']?.toString() ?? '';
+      _modalidadeController.text = detalhe['modalidade']?.toString() ?? '';
+      _equipeController.text = detalhe['equipe']?.toString() ?? '';
+      _categoriaController.text = detalhe['categoria']?.toString() ?? '';
+      _pesoController.text = detalhe['peso']?.toString() ?? '';
+      _alturaController.text = detalhe['altura']?.toString() ?? '';
+
+      final genero = detalhe['genero']?.toString() ?? 'Nao informado';
+      _generoSelect = generos.contains(genero) ? genero : generos.last;
+
+      final nivel = detalhe['nivelTreino']?.toString() ?? 'Intermediario';
+      _nivelSelect = niveis.firstWhere(
+        (n) => n.toLowerCase() == nivel.toLowerCase(),
+        orElse: () => 'Intermediario',
+      );
+
+      setState(() => _carregando = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _carregando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao carregar atleta: $e')),
+      );
+    }
   }
 
   @override
@@ -68,6 +98,13 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
 
   @override
   Widget build(BuildContext context) {
+    if (_carregando) {
+      return const Scaffold(
+        backgroundColor: _background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
