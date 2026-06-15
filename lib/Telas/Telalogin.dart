@@ -319,7 +319,7 @@ class _TelaloginState extends State<Telalogin> {
   }
 
   Widget _buildProfileToggle() {
-    const labels = ['Atleta', 'Nutrição', 'Treinador'];
+    const labels = ['Atleta', 'Nutricionista', 'Treinador'];
 
     return Container(
       height: 50,
