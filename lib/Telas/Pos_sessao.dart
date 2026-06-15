@@ -28,17 +28,15 @@ class _PosSessaoState extends State<PosSessao> {
   bool _temperaturaCarregando = true;
   bool _temperaturaFalha = false;
 
-  final TextEditingController _pesoFinalController = TextEditingController(
-    text: '80.5',
-  );
+  final TextEditingController _pesoFinalController = TextEditingController();
   final TextEditingController _temperaturaController = TextEditingController();
 
-  double _pesoInicial = 81.2;
-  int _rpe = 9;
-  int _urinaSelecionada = 2;
+  double _pesoInicial = 0;
+  int? _rpe;
+  int? _urinaSelecionada;
   bool _didLoadArgs = false;
 
-  final Set<String> _sintomasSelecionados = {'Nausea', 'Cefaleia'};
+  final Set<String> _sintomasSelecionados = {};
   final List<String> _sintomas = [
     'Nausea',
     'Refluxo',
@@ -80,6 +78,27 @@ class _PosSessaoState extends State<PosSessao> {
     }
 
     _carregarTemperaturaAmbiente();
+    _carregarPesoInicial();
+  }
+
+  Future<void> _carregarPesoInicial() async {
+    if (_pesoInicial > 0) return;
+
+    if (AuthStorage.token.isEmpty) return;
+
+    try {
+      final perfil = await AtletaService.obterPerfilAtleta(
+        token: AuthStorage.token,
+      );
+      final peso = perfil['peso'];
+      final pesoValor = peso is num
+          ? peso.toDouble()
+          : double.tryParse(peso?.toString() ?? '');
+      if (!mounted || pesoValor == null || pesoValor <= 0) return;
+      setState(() => _pesoInicial = pesoValor);
+    } catch (e) {
+      debugPrint('Erro ao carregar peso inicial: $e');
+    }
   }
 
   @override
@@ -168,16 +187,86 @@ class _PosSessaoState extends State<PosSessao> {
     });
   }
 
+  void _mostrarDialogoRpe() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: const Text(
+          'O que é RPE?',
+          style: TextStyle(
+            color: _text,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: const Text(
+          'RPE (Percepção de Esforço) é uma escala de 1 a 10 que indica '
+          'o quão intenso você sentiu o treino.\n\n'
+          '1 = muito leve, quase sem esforço\n'
+          '5 = esforço moderado\n'
+          '10 = esforço máximo, exaustão total\n\n'
+          'Escolha o número que melhor representa como você se sentiu '
+          'ao final da sessão.',
+          style: TextStyle(color: _muted, fontSize: 13, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text(
+              'ENTENDI',
+              style: TextStyle(
+                color: _lime,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _salvarSessao() async {
     final pesoFinal =
         double.tryParse(_pesoFinalController.text.replaceAll(',', '.')) ?? 0;
+
+    if (pesoFinal <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe o peso atual após a sessão.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_rpe == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione sua percepção de esforço (RPE).'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_urinaSelecionada == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione a cor da urina.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final registro = SessaoFinalizada(
       pesoInicial: _pesoInicial,
       pesoFinal: pesoFinal,
       sintomas: _sintomasSelecionados.toList(),
-      rpe: _rpe,
-      corUrina: _urinaSelecionada,
+      rpe: _rpe!,
+      corUrina: _urinaSelecionada!,
       criadoEm: DateTime.now(),
     );
 
@@ -405,7 +494,10 @@ class _PosSessaoState extends State<PosSessao> {
         children: [
           _buildPanelTitle('MASSA CORPORAL', trailing: Icons.open_in_full),
           const SizedBox(height: 18),
-          _buildWeightRow('PRE-SESSAO', _pesoInicial.toStringAsFixed(1)),
+          _buildWeightRow(
+            'PRE-SESSAO',
+            _pesoInicial > 0 ? _pesoInicial.toStringAsFixed(1) : '--',
+          ),
           const SizedBox(height: 14),
           const Text(
             'PESO ATUAL',
@@ -436,6 +528,12 @@ class _PosSessaoState extends State<PosSessao> {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white,
+                    hintText: '0.0',
+                    hintStyle: TextStyle(
+                      color: _muted.withValues(alpha: 0.5),
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                    ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 9,
@@ -582,22 +680,31 @@ class _PosSessaoState extends State<PosSessao> {
           Row(
             children: [
               _buildPanelTitle('PERCEPCAO DE ESFORCO (RPE)'),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                tooltip: 'O que é RPE?',
+                onPressed: _mostrarDialogoRpe,
+                icon: const Icon(Icons.info_outline, color: _muted, size: 18),
+              ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _lime,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  '$_rpe/10',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
+              if (_rpe != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _lime,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(
+                    '$_rpe/10',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -638,6 +745,9 @@ class _PosSessaoState extends State<PosSessao> {
                         decoration: BoxDecoration(
                           color: _rpe == i ? _lime : _surfaceLight,
                           borderRadius: BorderRadius.circular(4),
+                          border: _rpe == null
+                              ? Border.all(color: _surfaceLight)
+                              : null,
                         ),
                         child: Text(
                           '$i',

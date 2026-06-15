@@ -23,6 +23,7 @@ class _TelaperfilState extends State<Telaperfil> {
   static const _muted = Color(0xFF6B6B6B);
 
   bool _isSaving = false;
+  bool _isSavingSenha = false;
   bool _isLoading = true;
   bool _hasError = false;
   bool _mostrarSenha = false;
@@ -120,8 +121,6 @@ class _TelaperfilState extends State<Telaperfil> {
 
     final nome = _nomeController.text.trim();
     final email = _emailController.text.trim();
-    final senha = _senhaController.text;
-    final confirmSenha = _confirmSenhaController.text;
     final metaValor = _metaController.text.trim();
     final metaDiaria = _obterNumeroMeta(metaValor) ?? '2';
 
@@ -131,10 +130,6 @@ class _TelaperfilState extends State<Telaperfil> {
     }
     if (email.isEmpty) {
       _mostrarMensagem('Informe o email.');
-      return;
-    }
-    if (senha.isNotEmpty && senha != confirmSenha) {
-      _mostrarMensagem('A senha e a confirmação não coincidem.');
       return;
     }
 
@@ -152,10 +147,6 @@ class _TelaperfilState extends State<Telaperfil> {
       'nivelTreino': _nivelTreinoController.text.trim(),
       'metaDiaria': '${metaDiaria}L de água por dia',
     }..removeWhere((key, value) => value == null || value == '');
-
-    if (senha.isNotEmpty) {
-      perfilAtualizado['senha'] = senha;
-    }
 
     try {
       final perfil = await AtletaService.atualizarPerfil(
@@ -197,6 +188,50 @@ class _TelaperfilState extends State<Telaperfil> {
         _isSaving = false;
       });
       _mostrarMensagem('Erro ao atualizar perfil: $e');
+    }
+  }
+
+  Future<void> _salvarSenha() async {
+    if (_isSavingSenha || _isLoading) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final senha = _senhaController.text;
+    final confirmSenha = _confirmSenhaController.text;
+
+    if (senha.isEmpty) {
+      _mostrarMensagem('Informe a nova senha.');
+      return;
+    }
+    if (senha.length < 6) {
+      _mostrarMensagem('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (senha != confirmSenha) {
+      _mostrarMensagem('A senha e a confirmação não coincidem.');
+      return;
+    }
+
+    setState(() => _isSavingSenha = true);
+
+    try {
+      await AtletaService.atualizarPerfil(
+        token: AuthStorage.token,
+        perfil: {'senha': senha},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _senhaController.clear();
+        _confirmSenhaController.clear();
+        _isSavingSenha = false;
+      });
+
+      _mostrarMensagem('Senha atualizada com sucesso.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSavingSenha = false);
+      _mostrarMensagem('Erro ao atualizar senha: $e');
     }
   }
 
@@ -718,7 +753,7 @@ class _TelaperfilState extends State<Telaperfil> {
             passwordVisible: _mostrarSenha,
             onTogglePassword: () =>
                 setState(() => _mostrarSenha = !_mostrarSenha),
-            hintText: 'Deixe em branco para manter a atual',
+            hintText: 'Digite a nova senha',
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -731,6 +766,39 @@ class _TelaperfilState extends State<Telaperfil> {
               () => _mostrarConfirmarSenha = !_mostrarConfirmarSenha,
             ),
             hintText: 'Confirme a nova senha',
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: FilledButton.icon(
+              onPressed: (_isSavingSenha || _isLoading) ? null : _salvarSenha,
+              style: FilledButton.styleFrom(
+                backgroundColor: _lime,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: _isSavingSenha
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.lock_reset, size: 18),
+              label: const Text(
+                'SALVAR NOVA SENHA',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           SizedBox(
