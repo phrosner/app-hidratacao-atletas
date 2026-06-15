@@ -58,8 +58,16 @@ public class EquipeService {
         return equipeRepository.findByGestorIdOrderByCriadoEmDesc(gestorId);
     }
 
+    public List<Equipe> listarEquipesCompartilhadas() {
+        return equipeRepository.findEquipesCompartilhadasEntreGestores();
+    }
+
+    public Optional<Equipe> buscarEquipeCompartilhada(Long equipeId) {
+        return equipeRepository.findEquipeCompartilhadaPorId(equipeId);
+    }
+
     public Optional<Equipe> buscarPorIdEGestor(Long equipeId, Long gestorId) {
-        return equipeRepository.findByIdAndGestorId(equipeId, gestorId);
+        return buscarEquipeCompartilhada(equipeId);
     }
 
     public Optional<Equipe> buscarPorCodigo(String codigo) {
@@ -85,7 +93,11 @@ public class EquipeService {
     }
 
     public List<EquipeAtleta> listarAtletasDoGestor(Long gestorId) {
-        return equipeAtletaRepository.findByEquipeGestorId(gestorId);
+        return equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores();
+    }
+
+    public List<EquipeAtleta> listarVinculosCompartilhados() {
+        return equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores();
     }
 
     public void vincularAtleta(Equipe equipe, Usuario atleta) {

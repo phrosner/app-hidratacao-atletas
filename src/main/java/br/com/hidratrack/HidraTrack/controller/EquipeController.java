@@ -45,7 +45,7 @@ public class EquipeController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("erro", "Acesso negado"));
         }
-        List<Map<String, Object>> equipes = equipeService.listarPorGestor(gestor.get().getId()).stream()
+        List<Map<String, Object>> equipes = equipeService.listarEquipesCompartilhadas().stream()
                 .map(equipeService::toEquipeDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(equipes);
@@ -161,11 +161,11 @@ public class EquipeController {
                     .body(Map.of("erro", "Atleta não encontrado"));
         }
 
-        boolean pertenceAoGestor = equipeAtletaRepository.findByEquipeGestorId(gestor.get().getId()).stream()
+        boolean pertenceAoWorkspace = equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores().stream()
                 .anyMatch(v -> v.getAtleta().getId().equals(atletaId));
-        if (!pertenceAoGestor) {
+        if (!pertenceAoWorkspace) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("erro", "Atleta não pertence às suas equipes"));
+                    .body(Map.of("erro", "Atleta não pertence às equipes do sistema"));
         }
 
         equipeService.vincularAtleta(equipeOpt.get(), atletaOpt.get());

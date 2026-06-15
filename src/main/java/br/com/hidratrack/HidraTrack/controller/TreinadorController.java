@@ -51,7 +51,7 @@ public class TreinadorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("erro", "Acesso negado"));
         }
-        return ResponseEntity.ok(treinadorService.listarAtletasResumo(gestor.get().getId()));
+        return ResponseEntity.ok(treinadorService.listarAtletasResumo());
     }
 
     @GetMapping("/atletas/{atletaId}")
@@ -63,7 +63,7 @@ public class TreinadorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("erro", "Acesso negado"));
         }
-        return treinadorService.obterAtletaDetalhe(gestor.get().getId(), atletaId)
+        return treinadorService.obterAtletaDetalhe(atletaId)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("erro", "Atleta não encontrado")));
@@ -76,7 +76,7 @@ public class TreinadorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("erro", "Acesso negado"));
         }
-        return ResponseEntity.ok(treinadorService.listarAlertas(gestor.get().getId()));
+        return ResponseEntity.ok(treinadorService.listarAlertas());
     }
 
     @GetMapping("/atletas/disponiveis")
@@ -90,7 +90,7 @@ public class TreinadorController {
                     .body(Map.of("erro", "Acesso negado"));
         }
         List<Map<String, Object>> resultados = treinadorService.buscarAtletasDisponiveis(
-                gestor.get().getId(), equipeId, q);
+                equipeId, q);
         return ResponseEntity.ok(resultados);
     }
 }

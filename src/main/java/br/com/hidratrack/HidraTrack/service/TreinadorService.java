@@ -30,19 +30,17 @@ public class TreinadorService {
     private SessaoTreinoRepository sessaoTreinoRepository;
 
     public Map<String, Object> obterDashboard(Usuario gestor) {
-        List<Equipe> equipes = equipeService.listarPorGestor(gestor.getId());
-        List<EquipeAtleta> vinculos = equipeAtletaRepository.findByEquipeGestorId(gestor.getId());
-
-        Set<Long> atletaIds = vinculos.stream()
-                .map(v -> v.getAtleta().getId())
-                .collect(Collectors.toSet());
+        List<Equipe> equipes = equipeService.listarEquipesCompartilhadas();
+        List<EquipeAtleta> vinculos = equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores();
 
         long atletasAtivos = vinculos.stream()
                 .map(EquipeAtleta::getAtleta)
                 .filter(a -> Boolean.TRUE.equals(a.getAtivo()))
+                .map(Usuario::getId)
+                .distinct()
                 .count();
 
-        String crescimento = calcularCrescimento(gestor.getId());
+        String crescimento = calcularCrescimento(vinculos);
 
         Map<String, Object> clima = obterClimaLocal(vinculos);
 
@@ -53,27 +51,29 @@ public class TreinadorService {
         dashboard.put("equipes", equipes.stream()
                 .map(equipeService::toEquipeDto)
                 .collect(Collectors.toList()));
-        dashboard.put("atletas", listarAtletasResumo(gestor.getId()));
-        dashboard.put("alertas", listarAlertas(gestor.getId()));
+        dashboard.put("atletas", listarAtletasResumo());
+        dashboard.put("alertas", listarAlertas());
         return dashboard;
     }
 
-    private String calcularCrescimento(Long gestorId) {
-        List<EquipeAtleta> vinculos = equipeAtletaRepository.findByEquipeGestorId(gestorId);
+    private String calcularCrescimento(List<EquipeAtleta> vinculos) {
         if (vinculos.isEmpty()) {
             return "+0%";
         }
 
         LocalDateTime agora = LocalDateTime.now();
         LocalDateTime inicioMes = agora.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime inicioMesAnterior = inicioMes.minusMonths(1);
 
         long novosEsteMes = vinculos.stream()
                 .filter(v -> v.getVinculadoEm() != null && !v.getVinculadoEm().isBefore(inicioMes))
+                .map(v -> v.getAtleta().getId())
+                .distinct()
                 .count();
 
         long totalMesAnterior = vinculos.stream()
                 .filter(v -> v.getVinculadoEm() != null && v.getVinculadoEm().isBefore(inicioMes))
+                .map(v -> v.getAtleta().getId())
+                .distinct()
                 .count();
 
         if (totalMesAnterior == 0) {
@@ -110,9 +110,9 @@ public class TreinadorService {
         return clima;
     }
 
-    public List<Map<String, Object>> listarAtletasResumo(Long gestorId) {
+    public List<Map<String, Object>> listarAtletasResumo() {
         Map<Long, Map<String, Object>> unicos = new LinkedHashMap<>();
-        for (EquipeAtleta vinculo : equipeAtletaRepository.findByEquipeGestorId(gestorId)) {
+        for (EquipeAtleta vinculo : equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores()) {
             Long atletaId = vinculo.getAtleta().getId();
             if (!unicos.containsKey(atletaId)) {
                 unicos.put(atletaId, toAtletaListItem(vinculo));
@@ -139,8 +139,8 @@ public class TreinadorService {
         return item;
     }
 
-    public List<Map<String, Object>> listarAlertas(Long gestorId) {
-        return equipeAtletaRepository.findByEquipeGestorId(gestorId).stream()
+    public List<Map<String, Object>> listarAlertas() {
+        return equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores().stream()
                 .map(vinculo -> {
                     Usuario atleta = vinculo.getAtleta();
                     Equipe equipe = vinculo.getEquipe();
@@ -167,9 +167,8 @@ public class TreinadorService {
                 .collect(Collectors.toList());
     }
 
-    public Optional<Map<String, Object>> obterAtletaDetalhe(Long gestorId, Long atletaId) {
-        List<EquipeAtleta> vinculos = equipeAtletaRepository.findByEquipeGestorId(gestorId);
-        Optional<EquipeAtleta> vinculo = vinculos.stream()
+    public Optional<Map<String, Object>> obterAtletaDetalhe(Long atletaId) {
+        Optional<EquipeAtleta> vinculo = equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores().stream()
                 .filter(v -> v.getAtleta().getId().equals(atletaId))
                 .findFirst();
 
@@ -204,12 +203,12 @@ public class TreinadorService {
         return atleta.getIdade();
     }
 
-    public List<Map<String, Object>> buscarAtletasDisponiveis(Long gestorId, Long equipeId, String query) {
+    public List<Map<String, Object>> buscarAtletasDisponiveis(Long equipeId, String query) {
         if (query == null || query.isBlank()) {
             return List.of();
         }
 
-        List<EquipeAtleta> todosVinculos = equipeAtletaRepository.findByEquipeGestorId(gestorId);
+        List<EquipeAtleta> todosVinculos = equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores();
         Set<Long> jaNaEquipe = todosVinculos.stream()
                 .filter(v -> v.getEquipe().getId().equals(equipeId))
                 .map(v -> v.getAtleta().getId())

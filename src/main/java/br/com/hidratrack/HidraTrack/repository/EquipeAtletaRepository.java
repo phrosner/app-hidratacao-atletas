@@ -15,6 +15,9 @@ public interface EquipeAtletaRepository extends JpaRepository<EquipeAtleta, Long
 
     List<EquipeAtleta> findByEquipeGestorId(Long gestorId);
 
+    @Query("SELECT ea FROM EquipeAtleta ea WHERE ea.equipe.gestor.tipoUsuario IN ('TREINADOR', 'NUTRICIONISTA')")
+    List<EquipeAtleta> findByEquipesCompartilhadasEntreGestores();
+
     Optional<EquipeAtleta> findByEquipeIdAndAtletaId(Long equipeId, Long atletaId);
 
     boolean existsByEquipeIdAndAtletaId(Long equipeId, Long atletaId);
