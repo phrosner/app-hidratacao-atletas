@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/app_rotas.dart';
+import 'package:hidratrack/Servicos/AuthGate.dart';
+import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/Telas/TeladashboardTreinador.dart';
 import 'package:hidratrack/Telas/TelacriarEquipe.dart';
 import 'package:hidratrack/Telas/TeladadosEquipe.dart';
@@ -8,13 +10,14 @@ import 'package:hidratrack/Telas/Telagraficos.dart';
 import 'package:hidratrack/Modelos/AtletaDashboardWithBackend.dart';
 import 'package:hidratrack/Telas/Telahistorico.dart';
 import 'package:hidratrack/Telas/TelainiciarTreino.dart';
-import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/Telas/Telaperfil.dart';
 import 'package:hidratrack/Telas/TelaTaxaMedia.dart';
 import 'package:hidratrack/Telas/TelaSessaoAtiva.dart';
 import 'package:hidratrack/Telas/Pos_sessao.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AuthStorage.init();
   runApp(const MyApp());
 }
 
@@ -40,7 +43,7 @@ class MyApp extends StatelessWidget {
           fontFamily: _fontFamily,
         ),
       ),
-      home: const Telalogin(),
+      home: const AuthGate(),
       routes: {
         AppRotas.dashboardTreinador: (context) =>
             const TelaDashboardTreinador(),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
+import 'package:hidratrack/Servicos/AuthHelper.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/Servicos/TreinadorService.dart';
 import 'package:hidratrack/Telas/Telacadastro.dart';
@@ -296,35 +297,54 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
         ? 'Painel do Nutricionista'
         : 'Painel do Treinador';
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'H2OTRACK',
-          style: TextStyle(
-            color: _text,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'H2OTRACK',
+                style: TextStyle(
+                  color: _text,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 34),
+              const Text(
+                'DASHBOARD',
+                style: TextStyle(
+                  color: _lime,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  color: _text,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 34),
-        const Text(
-          'DASHBOARD',
-          style: TextStyle(
-            color: _lime,
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2,
+        TextButton.icon(
+          onPressed: () => AuthHelper.logout(context),
+          style: TextButton.styleFrom(
+            foregroundColor: _lime,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          titulo,
-          style: const TextStyle(
-            color: _text,
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            height: 1,
+          icon: const Icon(Icons.logout, size: 18),
+          label: const Text(
+            'SAIR',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
           ),
         ),
       ],

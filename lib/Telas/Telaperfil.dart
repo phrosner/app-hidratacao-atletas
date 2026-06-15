@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hidratrack/Servicos/AtletaService.dart';
+import 'package:hidratrack/Servicos/AuthHelper.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
-import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:hidratrack/app_rotas.dart';
 
 class Telaperfil extends StatefulWidget {
@@ -25,6 +25,8 @@ class _TelaperfilState extends State<Telaperfil> {
   bool _isSaving = false;
   bool _isLoading = true;
   bool _hasError = false;
+  bool _mostrarSenha = false;
+  bool _mostrarConfirmarSenha = false;
   String _errorMessage = '';
   Map<String, dynamic>? _perfil;
 
@@ -68,7 +70,7 @@ class _TelaperfilState extends State<Telaperfil> {
     });
 
     if (AuthStorage.token.isEmpty) {
-      _navegarParaLogin();
+      AuthHelper.logout(context);
       return;
     }
 
@@ -185,6 +187,9 @@ class _TelaperfilState extends State<Telaperfil> {
       });
 
       AuthStorage.nome = perfil['nome']?.toString() ?? AuthStorage.nome;
+      if (AuthStorage.rememberMe) {
+        await AuthStorage.saveSession(remember: true);
+      }
       _mostrarMensagem('Perfil atualizado com sucesso.');
     } catch (e) {
       if (!mounted) return;
@@ -195,17 +200,8 @@ class _TelaperfilState extends State<Telaperfil> {
     }
   }
 
-  void _navegarParaLogin() {
-    AuthStorage.clear();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const Telalogin()),
-      (route) => false,
-    );
-  }
-
   void _logout() {
-    _navegarParaLogin();
+    AuthHelper.logout(context);
   }
 
   void _mostrarMensagem(String mensagem) {
@@ -308,17 +304,32 @@ class _TelaperfilState extends State<Telaperfil> {
   }
 
   Widget _buildBrand() {
-    return const Row(
+    return Row(
       children: [
-        Icon(Icons.water_drop_outlined, color: _lime, size: 18),
-        SizedBox(width: 6),
-        Text(
+        const Icon(Icons.water_drop_outlined, color: _lime, size: 18),
+        const SizedBox(width: 6),
+        const Text(
           'H2OTRACK',
           style: TextStyle(
             color: _lime,
             fontSize: 15,
             fontWeight: FontWeight.w900,
             height: 1,
+          ),
+        ),
+        const Spacer(),
+        TextButton.icon(
+          onPressed: _logout,
+          style: TextButton.styleFrom(
+            foregroundColor: _lime,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          icon: const Icon(Icons.logout, size: 16),
+          label: const Text(
+            'SAIR',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
           ),
         ),
       ],
@@ -608,16 +619,8 @@ class _TelaperfilState extends State<Telaperfil> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Container(
-                        height: 46,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: _surfaceLight,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        child: TextField(
-                          controller: _metaController,
+                      child: TextField(
+                        controller: _metaController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
@@ -627,14 +630,30 @@ class _TelaperfilState extends State<Telaperfil> {
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
                           ),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             isDense: true,
-                            border: InputBorder.none,
                             hintText: '2',
-                            contentPadding: EdgeInsets.zero,
+                            hintStyle: TextStyle(color: _muted.withOpacity(0.6)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: _surfaceLight),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: _surfaceLight),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: _lime),
+                            ),
                           ),
                         ),
-                      ),
                     ),
                     const SizedBox(width: 8),
                     const Text(
@@ -660,7 +679,7 @@ class _TelaperfilState extends State<Telaperfil> {
       width: double.infinity,
       height: 50,
       child: FilledButton.icon(
-        onPressed: _salvarAlteracoes,
+        onPressed: (_isSaving || _isLoading) ? null : _salvarAlteracoes,
         style: FilledButton.styleFrom(
           backgroundColor: _lime,
           foregroundColor: Colors.white,
@@ -695,12 +714,40 @@ class _TelaperfilState extends State<Telaperfil> {
             label: 'SENHA NOVA',
             controller: _senhaController,
             obscureText: true,
+            showPasswordToggle: true,
+            passwordVisible: _mostrarSenha,
+            onTogglePassword: () =>
+                setState(() => _mostrarSenha = !_mostrarSenha),
+            hintText: 'Deixe em branco para manter a atual',
           ),
           const SizedBox(height: 16),
           _buildTextField(
             label: 'CONFIRMAR SENHA',
             controller: _confirmSenhaController,
             obscureText: true,
+            showPasswordToggle: true,
+            passwordVisible: _mostrarConfirmarSenha,
+            onTogglePassword: () => setState(
+              () => _mostrarConfirmarSenha = !_mostrarConfirmarSenha,
+            ),
+            hintText: 'Confirme a nova senha',
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _logout,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _lime,
+                side: const BorderSide(color: _lime),
+                minimumSize: const Size.fromHeight(44),
+              ),
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text(
+                'ENCERRAR SESSÃO',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           _buildCredentialItem(
@@ -759,34 +806,58 @@ class _TelaperfilState extends State<Telaperfil> {
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
+    bool showPasswordToggle = false,
+    bool passwordVisible = false,
+    VoidCallback? onTogglePassword,
+    String? hintText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
         const SizedBox(height: 7),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText && !passwordVisible,
+          style: const TextStyle(
+            color: _text,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            obscureText: obscureText,
-            style: const TextStyle(
-              color: _text,
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(
+              color: _muted.withOpacity(0.75),
               fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 16,
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _surfaceLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _lime, width: 1.5),
+            ),
+            suffixIcon: showPasswordToggle
+                ? IconButton(
+                    onPressed: onTogglePassword,
+                    icon: Icon(
+                      passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: _muted,
+                      size: 20,
+                    ),
+                  )
+                : null,
           ),
         ),
       ],

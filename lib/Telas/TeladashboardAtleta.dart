@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
+import 'package:hidratrack/Servicos/AuthHelper.dart';
 import 'package:hidratrack/app_rotas.dart';
 
 class TelaDashboardAtleta extends StatelessWidget {
@@ -37,7 +38,7 @@ class TelaDashboardAtleta extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 116),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      _buildBrand(),
+                      _buildBrand(context),
                       const SizedBox(height: 54),
                       _buildGreeting(),
                       const SizedBox(height: 28),
@@ -57,10 +58,34 @@ class TelaDashboardAtleta extends StatelessWidget {
     );
   }
 
-  Widget _buildBrand() {
-    return const Text(
-      'H2OTRACK',
-      style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w500),
+  Widget _buildBrand(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'H2OTRACK',
+            style: TextStyle(
+              color: _text,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () => AuthHelper.logout(context),
+          style: TextButton.styleFrom(
+            foregroundColor: _lime,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          icon: const Icon(Icons.logout, size: 16),
+          label: const Text(
+            'SAIR',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+          ),
+        ),
+      ],
     );
   }
 

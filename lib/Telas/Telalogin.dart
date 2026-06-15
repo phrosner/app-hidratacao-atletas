@@ -24,11 +24,18 @@ class _TelaloginState extends State<Telalogin> {
   static const _muted = Color(0xFF6B6B6B);
 
   bool mostrarSenha = false;
+  bool continuarConectado = true;
   bool carregandoLogin = false;
   int _perfilSelecionado = 0;
 
   final TextEditingController usuarioController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    continuarConectado = AuthStorage.rememberMe;
+  }
 
   @override
   void dispose() {
@@ -139,6 +146,8 @@ class _TelaloginState extends State<Telalogin> {
               // Não bloqueia o fluxo de login, mas mantém o token válido para requisições futuras.
             }
           }
+
+          await AuthStorage.saveSession(remember: continuarConectado);
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -300,7 +309,9 @@ class _TelaloginState extends State<Telalogin> {
               ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
+          _buildContinuarConectado(),
+          const SizedBox(height: 20),
           _buildLoginButton(),
         ],
       ),
@@ -411,6 +422,43 @@ class _TelaloginState extends State<Telalogin> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(7),
           borderSide: const BorderSide(color: _lime),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContinuarConectado() {
+    return InkWell(
+      onTap: () => setState(() => continuarConectado = !continuarConectado),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: Checkbox(
+                value: continuarConectado,
+                activeColor: _lime,
+                side: BorderSide(color: _lime.withValues(alpha: 0.5)),
+                onChanged: (value) {
+                  setState(() => continuarConectado = value ?? false);
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Continuar conectado',
+                style: TextStyle(
+                  color: _text,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

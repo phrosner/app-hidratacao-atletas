@@ -118,6 +118,8 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
       AuthStorage.tipoUsuario = resultado['tipoUsuario']?.toString() ?? 'ATLETA';
       AuthStorage.userId = (resultado['id'] as num?)?.toInt();
 
+      await AuthStorage.saveSession(remember: true);
+
       final senhaGerada = resultado['senhaGerada']?.toString();
       final usuario = resultado['usuario']?.toString() ?? '';
 
