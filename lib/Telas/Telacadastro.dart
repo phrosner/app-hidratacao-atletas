@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/Servicos/TreinadorService.dart';
 
@@ -173,24 +174,44 @@ class _TelaCadastroAtletaState extends State<TelaCadastroAtleta> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context),
+            ),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 34),
+                  padding: isDesktop
+                      ? const EdgeInsets.fromLTRB(40, 28, 40, 34)
+                      : const EdgeInsets.fromLTRB(18, 14, 18, 34),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildHeader(),
-                      const SizedBox(height: 54),
-                      _buildCadastroCard(),
+                      SizedBox(height: isDesktop ? 32 : 54),
+                      isDesktop
+                          ? Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 720),
+                                child: _buildCadastroCard(),
+                              ),
+                            )
+                          : _buildCadastroCard(),
                       const SizedBox(height: 46),
-                      _buildSalvarButton(),
+                      isDesktop
+                          ? Center(
+                              child: SizedBox(
+                                width: 360,
+                                child: _buildSalvarButton(),
+                              ),
+                            )
+                          : _buildSalvarButton(),
                     ]),
                   ),
                 ),

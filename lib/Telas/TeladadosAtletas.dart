@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 
 class TeladadosAtletas extends StatefulWidget {
@@ -83,7 +84,7 @@ class _TeladadosAtletasState extends State<TeladadosAtletas> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(

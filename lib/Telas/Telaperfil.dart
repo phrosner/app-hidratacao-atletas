@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:flutter/services.dart';
 import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/Servicos/AuthHelper.dart';
@@ -326,7 +327,7 @@ class _TelaperfilState extends State<Telaperfil> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(

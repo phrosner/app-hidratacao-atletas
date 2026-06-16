@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
@@ -197,10 +198,11 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final horizontalPadding = constraints.maxWidth >= 600 ? 24.0 : 16.0;
-            final contentWidth = constraints.maxWidth >= 760
-                ? 520.0
-                : double.infinity;
+            final isDesktop = ResponsiveLayout.isDesktop(context);
+            final horizontalPadding = isDesktop
+                ? 40.0
+                : (constraints.maxWidth >= 600 ? 24.0 : 16.0);
+            final contentWidth = ResponsiveLayout.contentMaxWidth(context);
 
             if (_carregando) {
               return const Center(child: CircularProgressIndicator());
@@ -248,22 +250,80 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                             const SizedBox(height: 22),
                             _buildTabs(),
                             const SizedBox(height: 14),
-                            if (_selectedTab == 0)
-                              if (_equipes.isEmpty)
-                                _buildEmptyState('Nenhuma equipe cadastrada')
+                            if (isDesktop)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        if (_selectedTab == 0)
+                                          if (_equipes.isEmpty)
+                                            _buildEmptyState(
+                                              'Nenhuma equipe cadastrada',
+                                            )
+                                          else
+                                            ResponsiveLayout.cardGrid(
+                                              context: context,
+                                              children: _equipes
+                                                  .map(_buildEquipeCard)
+                                                  .toList(),
+                                            )
+                                        else if (_atletas.isEmpty)
+                                          _buildEmptyState(
+                                            'Nenhum atleta vinculado',
+                                          )
+                                        else
+                                          ResponsiveLayout.cardGrid(
+                                            context: context,
+                                            children: _atletas
+                                                .map(_buildAtletaCard)
+                                                .toList(),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 28),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildSectionTitle('ALERTAS RECENTES'),
+                                        const SizedBox(height: 10),
+                                        if (_alertas.isEmpty)
+                                          _buildEmptyState(
+                                            'Nenhum alerta no momento',
+                                          )
+                                        else
+                                          ..._alertas.map(_buildAlertaCard),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else ...[
+                              if (_selectedTab == 0)
+                                if (_equipes.isEmpty)
+                                  _buildEmptyState('Nenhuma equipe cadastrada')
+                                else
+                                  ..._equipes.map(_buildEquipeCard)
+                              else if (_atletas.isEmpty)
+                                _buildEmptyState('Nenhum atleta vinculado')
                               else
-                                ..._equipes.map(_buildEquipeCard)
-                            else if (_atletas.isEmpty)
-                              _buildEmptyState('Nenhum atleta vinculado')
-                            else
-                              ..._atletas.map(_buildAtletaCard),
-                            const SizedBox(height: 16),
-                            _buildSectionTitle('ALERTAS RECENTES'),
-                            const SizedBox(height: 10),
-                            if (_alertas.isEmpty)
-                              _buildEmptyState('Nenhum alerta no momento')
-                            else
-                              ..._alertas.map(_buildAlertaCard),
+                                ..._atletas.map(_buildAtletaCard),
+                              const SizedBox(height: 16),
+                              _buildSectionTitle('ALERTAS RECENTES'),
+                              const SizedBox(height: 10),
+                              if (_alertas.isEmpty)
+                                _buildEmptyState('Nenhum alerta no momento')
+                              else
+                                ..._alertas.map(_buildAlertaCard),
+                            ],
                             const SizedBox(height: 64),
                           ]),
                         ),

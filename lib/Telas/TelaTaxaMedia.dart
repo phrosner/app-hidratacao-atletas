@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 
 import 'package:flutter/services.dart';
 
@@ -384,7 +385,7 @@ class _TelaTaxaMediaState extends State<TelaTaxaMedia> {
 
           child: ConstrainedBox(
 
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
 
             child: FutureBuilder<Map<String, dynamic>>(
 

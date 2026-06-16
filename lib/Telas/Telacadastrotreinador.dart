@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Telas/Telalogin.dart';
 import 'package:http/http.dart' as http;
 
@@ -189,7 +190,7 @@ class _TelaCadastroTreinadorState extends State<TelaCadastroTreinador> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(

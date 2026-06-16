@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/app_rotas.dart';
 import 'package:hidratrack/Modelos/AtletaListModels.dart';
 import 'package:hidratrack/Servicos/TreinadorService.dart';
@@ -99,7 +100,7 @@ class _TelaVisualizarAtletasState extends State<TelaVisualizarAtletas> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(
@@ -632,7 +633,7 @@ class _TelaTaxaMediaTemporariaState extends State<_TelaTaxaMediaTemporaria> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: FutureBuilder<Map<String, dynamic>>(
               future: _statsFuture,
               builder: (context, snapshot) {

@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 
 class ResponsiveContent extends StatelessWidget {
   const ResponsiveContent({
     super.key,
     required this.child,
-    this.maxWidth = 1180,
+    this.maxWidth,
     this.mobilePadding = const EdgeInsets.all(16),
     this.desktopPadding = const EdgeInsets.symmetric(
-      horizontal: 32,
+      horizontal: 40,
       vertical: 28,
     ),
   });
 
   final Widget child;
-  final double maxWidth;
+  final double? maxWidth;
   final EdgeInsets mobilePadding;
   final EdgeInsets desktopPadding;
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isDesktop = width >= 900;
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    final width = maxWidth ?? ResponsiveLayout.contentMaxWidth(context);
 
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
+        constraints: BoxConstraints(maxWidth: width),
         child: Padding(
           padding: isDesktop ? desktopPadding : mobilePadding,
           child: child,

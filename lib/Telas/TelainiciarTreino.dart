@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
@@ -55,7 +56,7 @@ class _TelaIniciarTreinoState extends State<TelaIniciarTreino> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(

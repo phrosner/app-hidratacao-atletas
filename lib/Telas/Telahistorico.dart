@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/app_rotas.dart';
 
@@ -51,7 +52,7 @@ class _TelaHistoricoState extends State<TelaHistorico> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: FutureBuilder<List<SessaoHistorico>>(
               future: _sessoesFuture,
               builder: (context, snapshot) {
@@ -64,32 +65,50 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                 return CustomScrollView(
                   slivers: [
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 86),
+                      padding: ResponsiveLayout.scrollPadding(context),
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
                           _buildBrand(),
                           const SizedBox(height: 28),
                           _buildFilters(),
                           const SizedBox(height: 28),
-                          _buildTrendCard(chartValues, media, sessoes),
-                          const SizedBox(height: 24),
-                          _buildSectionLabel('SESSOES ANTERIORES'),
-                          const SizedBox(height: 12),
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(28),
-                                child: CircularProgressIndicator(color: _lime),
-                              ),
+                          if (ResponsiveLayout.isDesktop(context))
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: _buildTrendCard(
+                                    chartValues,
+                                    media,
+                                    sessoes,
+                                  ),
+                                ),
+                                const SizedBox(width: 28),
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildSectionLabel('SESSOES ANTERIORES'),
+                                      const SizedBox(height: 12),
+                                      ..._buildSessionList(
+                                        snapshot,
+                                        sessoes,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             )
-                          else if (snapshot.hasError)
-                            _buildErrorState(snapshot.error.toString())
-                          else if (sessoes.isEmpty)
-                            _buildEmptyState()
-                          else
-                            for (final sessao in sessoes)
-                              _buildSessionCard(sessao),
+                          else ...[
+                            _buildTrendCard(chartValues, media, sessoes),
+                            const SizedBox(height: 24),
+                            _buildSectionLabel('SESSOES ANTERIORES'),
+                            const SizedBox(height: 12),
+                            ..._buildSessionList(snapshot, sessoes),
+                          ],
                         ]),
                       ),
                     ),
@@ -101,6 +120,29 @@ class _TelaHistoricoState extends State<TelaHistorico> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildSessionList(
+    AsyncSnapshot<List<SessaoHistorico>> snapshot,
+    List<SessaoHistorico> sessoes,
+  ) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: CircularProgressIndicator(color: _lime),
+          ),
+        ),
+      ];
+    }
+    if (snapshot.hasError) {
+      return [_buildErrorState(snapshot.error.toString())];
+    }
+    if (sessoes.isEmpty) {
+      return [_buildEmptyState()];
+    }
+    return sessoes.map(_buildSessionCard).toList();
   }
 
   Widget _buildBrand() {

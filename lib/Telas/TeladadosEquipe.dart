@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Modelos/EquipesModels.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/Servicos/TreinadorService.dart';
@@ -241,7 +242,7 @@ class _TeladadosEquipeState extends State<TeladadosEquipe> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(

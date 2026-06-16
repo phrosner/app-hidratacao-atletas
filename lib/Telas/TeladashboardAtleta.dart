@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Modelos/DashboardModels.dart';
 import 'package:hidratrack/Servicos/AuthHelper.dart';
 import 'package:hidratrack/app_rotas.dart';
@@ -25,6 +26,11 @@ class TelaDashboardAtleta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    final pagePadding = isDesktop
+        ? const EdgeInsets.fromLTRB(40, 28, 40, 116)
+        : const EdgeInsets.fromLTRB(16, 18, 16, 116);
+
     return Scaffold(
       backgroundColor: _background,
       floatingActionButton: _buildActionButton(context),
@@ -33,22 +39,18 @@ class TelaDashboardAtleta extends StatelessWidget {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context),
+            ),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 116),
+                  padding: pagePadding,
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildBrand(context),
-                      const SizedBox(height: 54),
-                      _buildGreeting(),
-                      const SizedBox(height: 28),
-                      _buildWeatherCard(),
-                      const SizedBox(height: 26),
-                      _buildStatsRow(),
-                      const SizedBox(height: 18),
-                      _buildWeeklyHydration(),
+                      SizedBox(height: isDesktop ? 32 : 54),
+                      _buildMainPanels(context),
                     ]),
                   ),
                 ),
@@ -57,6 +59,49 @@ class TelaDashboardAtleta extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMainPanels(BuildContext context) {
+    if (!ResponsiveLayout.isDesktop(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildGreeting(),
+          const SizedBox(height: 28),
+          _buildWeatherCard(),
+          const SizedBox(height: 26),
+          _buildStatsRow(),
+          const SizedBox(height: 18),
+          _buildWeeklyHydration(),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildGreeting(),
+        const SizedBox(height: 28),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 2, child: _buildWeatherCard()),
+            const SizedBox(width: 28),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildStatsRow(),
+                  const SizedBox(height: 24),
+                  _buildWeeklyHydration(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

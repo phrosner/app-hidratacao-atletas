@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hidratrack/Componentes/ResponsiveLayout.dart';
 import 'package:hidratrack/Servicos/AtletaService.dart';
 import 'package:hidratrack/Servicos/AuthStorage.dart';
 import 'package:hidratrack/app_rotas.dart';
@@ -85,7 +86,7 @@ class _TelaloginState extends State<Telalogin> {
       return 'http://localhost:8080';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.2.2.246:8080';
+      return 'http://172.20.10.2:8080';
     }
     return 'http://localhost:8080';
   }
@@ -189,27 +190,49 @@ class _TelaloginState extends State<Telalogin> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(18, 54, 18, 30),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildBrand(),
-                      const SizedBox(height: 82),
-                      _buildLoginCard(),
-                    ]),
-                  ),
-                ),
-              ],
+            constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context),
             ),
+            child: isDesktop
+                ? Padding(
+                    padding: ResponsiveLayout.pagePadding(context),
+                    child: Center(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 40),
+                              child: _buildBrand(),
+                            ),
+                          ),
+                          Expanded(child: _buildLoginCard()),
+                        ],
+                      ),
+                    ),
+                  )
+                : CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(18, 54, 18, 30),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            _buildBrand(),
+                            const SizedBox(height: 82),
+                            _buildLoginCard(),
+                          ]),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
