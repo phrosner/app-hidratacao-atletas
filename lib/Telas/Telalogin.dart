@@ -205,8 +205,6 @@ class _TelaloginState extends State<Telalogin> {
                       _buildBrand(),
                       const SizedBox(height: 82),
                       _buildLoginCard(),
-                      const SizedBox(height: 78),
-                      _buildFooterStatus(),
                     ]),
                   ),
                 ),
@@ -230,16 +228,6 @@ class _TelaloginState extends State<Telalogin> {
             fontSize: 39,
             fontWeight: FontWeight.w900,
             height: 1,
-          ),
-        ),
-        SizedBox(height: 16),
-        Text(
-          'CYBER-ATHLETIC PERFORMANCE CNIP',
-          style: TextStyle(
-            color: _muted,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2.4,
           ),
         ),
       ],
@@ -502,16 +490,7 @@ class _TelaloginState extends State<Telalogin> {
     );
   }
 
-  Widget _buildFooterStatus() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        _StatusDot(color: _lime, text: 'HYPER ENVINE'),
-        SizedBox(width: 46),
-        _StatusDot(color: _cyan, text: 'ENCRYPTED SYNC'),
-      ],
-    );
-  }
+  
 }
 
 class _StatusDot extends StatelessWidget {
