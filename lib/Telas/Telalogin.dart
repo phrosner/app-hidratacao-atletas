@@ -86,7 +86,7 @@ class _TelaloginState extends State<Telalogin> {
       return 'http://localhost:8080';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://172.20.10.2:8080';
+      return 'http://10.2.0.167:8080';
     }
     return 'http://localhost:8080';
   }

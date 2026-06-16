@@ -1,10 +1,23 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Cliente HTTP para comunicação com o backend HidraTrack.
-/// Todas as chamadas são feitas para o servidor Spring Boot na porta 8080.
 class HidraTrackApiClient {
-  static const String baseUrl = 'http://localhost:8080/api';
+
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8080/api';
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.2.0.167:8080/api';
+    }
+
+    return 'http://localhost:8080/api';
+  }
+
   static const Duration timeout = Duration(seconds: 30);
 
   // Headers padrão para todas as requisições
