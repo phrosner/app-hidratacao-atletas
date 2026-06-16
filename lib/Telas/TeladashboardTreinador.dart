@@ -35,7 +35,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   bool _carregando = true;
   String? _erro;
   ClimaDados? _climaDados;
-  String _crescimentoAtletas = '+0%';
   int _totalAtletas = 0;
 
   List<Equipe> _equipes = [];
@@ -62,7 +61,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
       final clima = dados['clima'] as Map<String, dynamic>? ?? {};
       setState(() {
         _totalAtletas = (dados['totalAtletas'] as num?)?.toInt() ?? 0;
-        _crescimentoAtletas = dados['crescimentoAtletas']?.toString() ?? '+0%';
         _climaDados = ClimaDados.fromJson(clima);
         _equipes = (dados['equipes'] as List<dynamic>? ?? [])
             .map((e) => Equipe.fromJson(e as Map<String, dynamic>))
@@ -86,9 +84,9 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
 
   void _acaoPrincipal() async {
     if (_selectedTab == 0) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const TelacriarEquipe()),
-      );
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const TelacriarEquipe()));
       _carregarDashboard();
       return;
     }
@@ -358,8 +356,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
           child: _MetricCard(
             label: 'Atletas Ativos',
             value: _totalAtletas.toString().padLeft(2, '0'),
-            accent: _crescimentoAtletas,
-            accentColor: _lime,
             icon: Icons.groups_2_outlined,
           ),
         ),
@@ -499,12 +495,6 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                   'ATLETAS',
                   equipe.numeroAtletas.toString().padLeft(2, '0'),
                 ),
-                const SizedBox(width: 54),
-                _buildSmallStat(
-                  'HIDRATACAO AVG',
-                  '${equipe.percentualHidratacao.toStringAsFixed(0)}%',
-                  color: accent,
-                ),
               ],
             ),
             const Spacer(),
@@ -582,17 +572,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
               ],
             ),
             const Spacer(),
-            Row(
-              children: [
-                _buildSmallStat('CATEGORIA', atleta.categoria),
-                const SizedBox(width: 54),
-                _buildSmallStat(
-                  'HIDRATACAO',
-                  '${atleta.hidratacao.toStringAsFixed(0)}%',
-                  color: accent,
-                ),
-              ],
-            ),
+            Row(children: [_buildSmallStat('CATEGORIA', atleta.categoria)]),
             const Spacer(),
             Row(
               children: [
@@ -714,6 +694,8 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
   }
 
   Widget _buildAlertaCard(Atleta alerta) {
+    final descricao = _removerPorcentagem(alerta.descricao).toUpperCase();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -750,7 +732,7 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${alerta.situacao.toUpperCase()} - ${alerta.descricao.toUpperCase()}',
+                  '${alerta.situacao.toUpperCase()} - $descricao',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -783,20 +765,24 @@ class _TelaDashboardTreinadorState extends State<TelaDashboardTreinador> {
       ),
     );
   }
+
+  String _removerPorcentagem(String texto) {
+    return texto.replaceAll(RegExp(r'[+-]?\d+(?:[.,]\d+)?\s*%'), '').trim();
+  }
 }
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.label,
     required this.value,
-    required this.accent,
-    required this.accentColor,
     required this.icon,
+    this.accent,
+    this.accentColor = _TelaDashboardTreinadorState._muted,
   });
 
   final String label;
   final String value;
-  final String accent;
+  final String? accent;
   final Color accentColor;
   final IconData icon;
 
@@ -852,22 +838,24 @@ class _MetricCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        accent,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
+                  if (accent != null && accent!.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          accent!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],
