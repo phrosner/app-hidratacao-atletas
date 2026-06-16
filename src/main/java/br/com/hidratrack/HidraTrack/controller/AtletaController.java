@@ -3,6 +3,7 @@ package br.com.hidratrack.HidraTrack.controller;
 import br.com.hidratrack.HidraTrack.dto.SessaoTreinoDTO;
 import br.com.hidratrack.HidraTrack.dto.StatsSessaoDTO;
 import br.com.hidratrack.HidraTrack.service.StatsService;
+import br.com.hidratrack.HidraTrack.service.HidratacaoService;
 import br.com.hidratrack.HidraTrack.model.ConsumoAgua;
 import br.com.hidratrack.HidraTrack.model.SessaoTreino;
 import br.com.hidratrack.HidraTrack.model.Usuario;
@@ -51,6 +52,9 @@ public class AtletaController {
 
     @Autowired
     private EquipeAtletaRepository equipeAtletaRepository;
+
+    @Autowired
+    private HidratacaoService hidratacaoService;
 
     private Optional<Usuario> extrairUsuarioDoToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -152,6 +156,12 @@ public class AtletaController {
             dashboard.put("consumoMedio", consumoMedio);
             dashboard.put("temperatura", temperatura);
             dashboard.put("clima", clima);
+            
+            // Adicionar dados de hidratação semanal
+            if (usuarioLogado.isPresent()) {
+                Map<String, Object> hidratacaoSemanal = hidratacaoService.calcularHidratacaoSemanal(usuarioLogado.get().getId());
+                dashboard.putAll(hidratacaoSemanal);
+            }
 
             return ResponseEntity.ok(dashboard);
         } catch (Exception e) {

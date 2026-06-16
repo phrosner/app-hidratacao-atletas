@@ -9,6 +9,8 @@ class AtletaDashboardData {
   final double recommendedIntakeLiters;
   final double completedPercent;
   final double averageRate;
+  final double weeklyHydrationPercentual;
+  final List<double>? weeklyBars;
 
   AtletaDashboardData({
     required this.greetingTitle,
@@ -16,17 +18,45 @@ class AtletaDashboardData {
     required this.recommendedIntakeLiters,
     required this.completedPercent,
     required this.averageRate,
+    this.weeklyHydrationPercentual = 88.0,
+    this.weeklyBars,
   });
 
   factory AtletaDashboardData.fromBackend(Map<String, dynamic> data) {
     final nomeAtleta = data['nomeAtleta'] ?? 'Atleta';
+    final percentualSemanal = _parseDouble(data['percentualSemanal'], 0.0);
+    final aguaConsumidaSemana = _parseDouble(data['aguaConsumidaSemana'], 0.0);
+    final metaSemanal = _parseDouble(data['metaSemanal'], 0.0);
+    
+    // Calcular barras da semana baseadas no consumo diário estimado
+    final consumoDiarioEstimado = metaSemanal > 0 ? aguaConsumidaSemana / 7 : 0.0;
+    final metaDiaria = metaSemanal > 0 ? metaSemanal / 7 : 2.0;
+    final List<double> bars = List.generate(6, (index) {
+      final randomFactor = 0.8 + (index * 0.04);
+      final barValue = (consumoDiarioEstimado / metaDiaria) * randomFactor;
+      return barValue.clamp(0.0, 1.0);
+    });
+
     return AtletaDashboardData(
       greetingTitle: 'BOM TREINO, ${nomeAtleta.toString().toUpperCase()}!',
       sweatRate: (data['taxaSuor'] ?? 0.0).toDouble(),
       recommendedIntakeLiters: (data['hidratacaoRecomendada'] ?? 0.0).toDouble(),
       completedPercent: ((data['percentualConsumido'] ?? 0) / 100).toDouble(),
       averageRate: (data['consumoMedio'] ?? 0.0).toDouble(),
+      weeklyHydrationPercentual: percentualSemanal,
+      weeklyBars: bars,
     );
+  }
+
+  static double _parseDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
   }
 }
 
@@ -374,7 +404,8 @@ class TelaDashboardAtletaUI extends StatelessWidget {
   }
 
   Widget _buildWeeklyHydration() {
-    const bars = [0.85, 0.55, 0.95, 0.45, 0.78, 1.0];
+    final percentual = data.weeklyHydrationPercentual;
+    final bars = data.weeklyBars ?? const [0.85, 0.55, 0.95, 0.45, 0.78, 1.0];
 
     return Container(
       height: 96,
@@ -428,7 +459,7 @@ class TelaDashboardAtletaUI extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${(data.completedPercent * 100).toStringAsFixed(0)}%',
+                '${percentual.toStringAsFixed(0)}%',
                 style: const TextStyle(
                   color: _text,
                   fontSize: 25,
