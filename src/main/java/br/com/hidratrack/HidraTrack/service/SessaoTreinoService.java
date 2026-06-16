@@ -59,6 +59,12 @@ public class SessaoTreinoService {
         sessao.setDataInicio(dto.getDataInicio() != null ? dto.getDataInicio() : LocalDateTime.now());
         sessao.setTemperaturaAmbiente(dto.getTemperaturaAmbiente());
         sessao.setUmidadeRelativa(dto.getUmidadeRelativa());
+        sessao.setPesoInicial(dto.getPesoInicial());
+        sessao.setPesoFinal(dto.getPesoFinal());
+        sessao.setRpe(dto.getRpe());
+        sessao.setCorUrina(dto.getCorUrina());
+        sessao.setSintomas(dto.getSintomas());
+        sessao.setTipoTreino(dto.getTipoTreino());
         sessao.setStatus(SessaoTreino.StatusSessao.EM_ANDAMENTO);
 
         SessaoTreino saved = sessaoRepository.save(sessao);
@@ -96,6 +102,27 @@ public class SessaoTreinoService {
             System.err.println("Erro ao calcular stats: " + e.getMessage());
         }
 
+        return convertToDTO(updated);
+    }
+
+    /**
+     * Atualiza dados de pós-sessão (peso, RPE, cor da urina, sintomas).
+     */
+    public SessaoTreinoDTO atualizarPosSessao(Long sessaoId, SessaoTreinoDTO dto) {
+        Optional<SessaoTreino> sessaoOpt = sessaoRepository.findById(sessaoId);
+        if (sessaoOpt.isEmpty()) {
+            throw new IllegalArgumentException("Sessão não encontrada");
+        }
+
+        SessaoTreino sessao = sessaoOpt.get();
+        sessao.setPesoInicial(dto.getPesoInicial());
+        sessao.setPesoFinal(dto.getPesoFinal());
+        sessao.setRpe(dto.getRpe());
+        sessao.setCorUrina(dto.getCorUrina());
+        sessao.setSintomas(dto.getSintomas());
+        sessao.setTipoTreino(dto.getTipoTreino());
+
+        SessaoTreino updated = sessaoRepository.save(sessao);
         return convertToDTO(updated);
     }
 
@@ -200,6 +227,12 @@ public class SessaoTreinoService {
         dto.setDurationMinutos(sessao.getDurationMinutos());
         dto.setTemperaturaAmbiente(sessao.getTemperaturaAmbiente());
         dto.setUmidadeRelativa(sessao.getUmidadeRelativa());
+        dto.setPesoInicial(sessao.getPesoInicial());
+        dto.setPesoFinal(sessao.getPesoFinal());
+        dto.setRpe(sessao.getRpe());
+        dto.setCorUrina(sessao.getCorUrina());
+        dto.setSintomas(sessao.getSintomas());
+        dto.setTipoTreino(sessao.getTipoTreino());
         dto.setStatus(sessao.getStatus().toString());
 
         // Converter métricas explicitamente via repositório para evitar problemas de lazy loading

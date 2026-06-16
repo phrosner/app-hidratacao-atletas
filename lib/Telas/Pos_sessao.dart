@@ -352,6 +352,21 @@ class _PosSessaoState extends State<PosSessao> {
         }
       }
 
+      // Salvar dados de pós-sessão no backend
+      try {
+        await AtletaService.atualizarPosSessao(
+          sessaoId: sessaoId,
+          pesoInicial: _pesoInicial,
+          pesoFinal: pesoFinal,
+          rpe: _rpe!,
+          corUrina: _urinaSelecionada!,
+          sintomas: _sintomasSelecionados.toList(),
+          tipoTreino: 'Treino de sessão',
+        );
+      } catch (e) {
+        debugPrint('Falha ao salvar dados de pós-sessão: $e');
+      }
+
       SessaoStore.salvar(registro);
 
       ScaffoldMessenger.of(context).showSnackBar(

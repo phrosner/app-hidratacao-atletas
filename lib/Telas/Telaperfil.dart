@@ -42,6 +42,9 @@ class _TelaperfilState extends State<Telaperfil> {
   final TextEditingController _nivelTreinoController = TextEditingController();
   final TextEditingController _metaController = TextEditingController();
 
+  String? _generoSelect;
+  final List<String> generos = ['Masculino', 'Feminino', 'Outro'];
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +95,14 @@ class _TelaperfilState extends State<Telaperfil> {
         _esporteController.text = perfil['esporte']?.toString() ?? '';
         _nivelTreinoController.text = perfil['nivelTreino']?.toString() ?? '';
         _metaController.text = _obterNumeroMeta(perfil['metaDiaria']?.toString()) ?? '2';
+        
+        final genero = perfil['genero']?.toString() ?? 'Outro';
+        final generoNormalizado = genero.toLowerCase().trim();
+        _generoSelect = generos.firstWhere(
+          (g) => g.toLowerCase() == generoNormalizado,
+          orElse: () => 'Outro',
+        );
+        
         if (_metaController.text.isEmpty) {
           _metaController.text = '2';
         }
@@ -146,6 +157,7 @@ class _TelaperfilState extends State<Telaperfil> {
       'esporte': _esporteController.text.trim(),
       'nivelTreino': _nivelTreinoController.text.trim(),
       'metaDiaria': '${metaDiaria}L de água por dia',
+      'genero': _generoSelect,
     }..removeWhere((key, value) => value == null || value == '');
 
     try {
@@ -170,6 +182,14 @@ class _TelaperfilState extends State<Telaperfil> {
             perfil['esporte']?.toString() ?? _esporteController.text;
         _nivelTreinoController.text =
             perfil['nivelTreino']?.toString() ?? _nivelTreinoController.text;
+        
+        final genero = perfil['genero']?.toString() ?? 'Outro';
+        final generoNormalizado = genero.toLowerCase().trim();
+        _generoSelect = generos.firstWhere(
+          (g) => g.toLowerCase() == generoNormalizado,
+          orElse: () => 'Outro',
+        );
+        
         _metaController.text =
             _obterNumeroMeta(perfil['metaDiaria']?.toString()) ?? metaDiaria;
         _senhaController.clear();
@@ -586,6 +606,8 @@ class _TelaperfilState extends State<Telaperfil> {
           ],
         ),
         const SizedBox(height: 14),
+        _buildGenderDropdown(),
+        const SizedBox(height: 14),
         _buildTextField(
           label: 'NÍVEL DE TREINO',
           controller: _nivelTreinoController,
@@ -596,6 +618,50 @@ class _TelaperfilState extends State<Telaperfil> {
         _buildGoalCard(),
         const SizedBox(height: 12),
         _buildSaveChangesButton(),
+      ],
+    );
+  }
+
+  Widget _buildGenderDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('GÊNERO'),
+        const SizedBox(height: 7),
+        DropdownButtonFormField<String>(
+          value: _generoSelect,
+          isExpanded: true,
+          dropdownColor: Colors.white,
+          icon: const Icon(Icons.keyboard_arrow_down, color: _muted, size: 20),
+          style: const TextStyle(color: _text, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Selecione',
+            hintStyle: const TextStyle(color: _muted, fontSize: 14),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _surfaceLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _lime, width: 1.5),
+            ),
+          ),
+          items: generos
+              .map(
+                (item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: (value) => setState(() => _generoSelect = value),
+        ),
       ],
     );
   }

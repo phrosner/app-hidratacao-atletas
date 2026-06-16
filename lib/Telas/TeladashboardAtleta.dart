@@ -21,6 +21,8 @@ class TelaDashboardAtleta extends StatelessWidget {
   final AtletaDashboardData data;
   final VoidCallback? onStartSession;
 
+  static const List<double> _defaultBars = [0.85, 0.55, 0.95, 0.45, 0.78, 1.0];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,7 +218,8 @@ class TelaDashboardAtleta extends StatelessWidget {
   }
 
   Widget _buildWeeklyHydration() {
-    const bars = [0.85, 0.55, 0.95, 0.45, 0.78, 1.0];
+    final percentual = data.weeklyHydrationPercentual;
+    final bars = data.weeklyBars ?? _defaultBars;
 
     return Container(
       height: 96,
@@ -270,7 +273,7 @@ class TelaDashboardAtleta extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                data.weeklyHydration,
+                '${percentual.toStringAsFixed(0)}%',
                 style: const TextStyle(
                   color: _text,
                   fontSize: 25,
@@ -502,6 +505,8 @@ class AtletaDashboardData {
     required this.variationColor,
     required this.clima,
     this.weeklyHydration = '88%',
+    this.weeklyHydrationPercentual = 88.0,
+    this.weeklyBars,
   });
 
   final String greetingTitle;
@@ -520,6 +525,8 @@ class AtletaDashboardData {
   final Color variationColor;
   final ClimaDados clima;
   final String weeklyHydration;
+  final double weeklyHydrationPercentual;
+  final List<double>? weeklyBars;
 
   factory AtletaDashboardData.fromHydrationMetrics({
     required String athleteName,
@@ -563,6 +570,68 @@ class AtletaDashboardData {
             condicao: 'Sem informação',
           ),
       weeklyHydration: '88%',
+      weeklyHydrationPercentual: 88.0,
     );
+  }
+
+  factory AtletaDashboardData.fromBackend(Map<String, dynamic> data) {
+    final nomeAtleta = data['nomeAtleta'] ?? 'Atleta';
+    final taxaSuor = _parseDouble(data['taxaSuor'], 1.0);
+    final hidratacaoRecomendada = _parseDouble(data['hidratacaoRecomendada'], 2.0);
+    final percentualConsumido = _parseDouble(data['percentualConsumido'], 0.0);
+    final percentualVariacao = _parseDouble(data['percentualVariacao'], 0.0);
+    final temperatura = _parseDouble(data['temperatura'], 0.0);
+    final umidade = data['umidade'] ?? 0;
+    final condicao = data['clima'] ?? 'Não informado';
+    
+    // Dados de hidratação semanal
+    final percentualSemanal = _parseDouble(data['percentualSemanal'], 0.0);
+    final aguaConsumidaSemana = _parseDouble(data['aguaConsumidaSemana'], 0.0);
+    final metaSemanal = _parseDouble(data['metaSemanal'], 0.0);
+    
+    // Calcular barras da semana baseadas no consumo diário estimado
+    final consumoDiarioEstimado = metaSemanal > 0 ? aguaConsumidaSemana / 7 : 0.0;
+    final metaDiaria = metaSemanal > 0 ? metaSemanal / 7 : 2.0;
+    final List<double> bars = List.generate(6, (index) {
+      final randomFactor = 0.8 + (index * 0.04);
+      final barValue = (consumoDiarioEstimado / metaDiaria) * randomFactor;
+      return barValue.clamp(0.0, 1.0);
+    });
+
+    return AtletaDashboardData(
+      greetingTitle: 'BOM TREINO, ${nomeAtleta.toString().toUpperCase()}!',
+      subtitle: 'Seu foco hoje: Hidratacao e Recuperacao.',
+      alertTitle: 'ALERTA DE HIDRATACAO',
+      alertSubtitle: 'Sua taxa de suor na ultima sessao foi alta.',
+      alertMessage: 'Sua taxa de suor na ultima sessao foi alta.',
+      hasAlert: false,
+      progress: percentualConsumido / 100.0,
+      progressLabel: 'COMPLETADO',
+      progressPercentage: '${percentualConsumido.toStringAsFixed(0)}% COMPLETADO',
+      averageRateLabel: 'TAXA DE SUOR',
+      averageRateValue: '${taxaSuor.toStringAsFixed(1)} L/h',
+      variationLabel: 'VARIACAO',
+      variationValue: '${percentualVariacao.toStringAsFixed(1)}%',
+      variationColor: percentualVariacao >= 0 ? const Color(0xFFB32025) : const Color(0xFF8F171B),
+      clima: ClimaDados(
+        temperatura: temperatura,
+        umidade: umidade is int ? umidade : (umidade as num).toInt(),
+        condicao: condicao.toString(),
+      ),
+      weeklyHydration: '${percentualSemanal.toStringAsFixed(0)}%',
+      weeklyHydrationPercentual: percentualSemanal,
+      weeklyBars: bars,
+    );
+  }
+
+  static double _parseDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
   }
 }

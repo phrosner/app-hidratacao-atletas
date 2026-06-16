@@ -138,4 +138,22 @@ public class SessaoTreinoController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
+
+    /**
+     * Atualiza dados de pós-sessão (peso, RPE, cor da urina, sintomas).
+     * PUT /api/sessoes/{sessaoId}/pos-sessao
+     */
+    @PutMapping("/{sessaoId}/pos-sessao")
+    public ResponseEntity<SessaoTreinoDTO> atualizarPosSessao(
+            @PathVariable Long sessaoId,
+            @RequestBody SessaoTreinoDTO dto) {
+        try {
+            SessaoTreinoDTO updated = sessaoService.atualizarPosSessao(sessaoId, dto);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
 }

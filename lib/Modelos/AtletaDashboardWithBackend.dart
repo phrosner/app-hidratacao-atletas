@@ -185,17 +185,8 @@ class _TelaDashboardAtletaComBackendState
       0.0,
     );
 
-    return atleta_dashboard.AtletaDashboardData.fromHydrationMetrics(
-      athleteName: nomeAtleta,
-      sweatRate: taxaSuor,
-      recommendedIntakeLiters: hidratacaoRecomendada,
-      recommendedWindow: const Duration(hours: 3),
-      completedPercent: percentualConsumido,
-      averageRate: consumoMedio,
-      variationPercent: variationPercent,
-      hasHydrationAlert: percentualConsumido < 0.5,
-      clima: clima,
-    );
+    // Use fromBackend factory method which includes weekly hydration data
+    return atleta_dashboard.AtletaDashboardData.fromBackend(data);
   }
 
   Future<int?> _resolveAtletaId() async {

@@ -25,4 +25,7 @@ abstract final class AppRotas {
 
   /// Perfil do atleta.
   static const String perfilAtleta = '/perfil-atleta';
+
+  /// Detalhes de uma sessão específica do atleta.
+  static const String detalhesSessao = '/detalhes-sessao';
 }
