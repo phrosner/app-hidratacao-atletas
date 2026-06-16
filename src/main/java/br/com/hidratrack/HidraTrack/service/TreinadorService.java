@@ -51,7 +51,7 @@ public class TreinadorService {
         dashboard.put("equipes", equipes.stream()
                 .map(equipeService::toEquipeDto)
                 .collect(Collectors.toList()));
-        dashboard.put("atletas", listarAtletasResumo());
+        dashboard.put("atletas", listarAtletasResumo(gestor));
         dashboard.put("alertas", listarAlertas());
         return dashboard;
     }
@@ -110,7 +110,7 @@ public class TreinadorService {
         return clima;
     }
 
-    public List<Map<String, Object>> listarAtletasResumo() {
+    public List<Map<String, Object>> listarAtletasResumo(Usuario gestor) {
         Map<Long, Map<String, Object>> unicos = new LinkedHashMap<>();
         for (EquipeAtleta vinculo : equipeAtletaRepository.findByEquipesCompartilhadasEntreGestores()) {
             Long atletaId = vinculo.getAtleta().getId();

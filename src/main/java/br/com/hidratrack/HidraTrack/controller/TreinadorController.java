@@ -51,7 +51,7 @@ public class TreinadorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("erro", "Acesso negado"));
         }
-        return ResponseEntity.ok(treinadorService.listarAtletasResumo());
+        return ResponseEntity.ok(treinadorService.listarAtletasResumo(gestor.get()));
     }
 
     @GetMapping("/atletas/{atletaId}")
